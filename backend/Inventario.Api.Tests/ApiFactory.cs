@@ -31,11 +31,11 @@ public class ApiFactory : WebApplicationFactory<Program>
         });
     }
 
-    /// <summary>Cliente ya autenticado como admin.</summary>
-    public async Task<HttpClient> ClienteAutenticadoAsync()
+    /// <summary>Cliente ya autenticado (admin por defecto).</summary>
+    public async Task<HttpClient> ClienteAutenticadoAsync(string usuario = "admin", string clave = "admin123")
     {
         var cliente = CreateClient();
-        var respuesta = await cliente.PostAsJsonAsync("/api/auth/login", new { usuario = "admin", clave = "admin123" });
+        var respuesta = await cliente.PostAsJsonAsync("/api/auth/login", new { usuario, clave });
         respuesta.EnsureSuccessStatusCode();
         var cuerpo = await respuesta.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
         cliente.DefaultRequestHeaders.Authorization = new("Bearer", cuerpo.GetProperty("token").GetString());
@@ -43,17 +43,78 @@ public class ApiFactory : WebApplicationFactory<Program>
     }
 }
 
+/// <summary>
+/// Usuarios en memoria: admin/admin123 (ADMIN), operador/bodega123 (OPERADOR) y
+/// temporal/temporal123 (OPERADOR con clave temporal pendiente de cambio).
+/// </summary>
 public class UsuariosFalsos : IUsuarioRepositorio
 {
-    // admin / admin123
-    private static readonly Usuario Admin = new()
-    {
-        Id = 1, NombreUsuario = "admin", NombreCompleto = "Administrador",
-        ClaveHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Activo = true
-    };
+    public List<Usuario> Usuarios { get; } =
+    [
+        new() { Id = 1, NombreUsuario = "admin", NombreCompleto = "Administrador", Rol = Roles.Admin, Activo = true,
+                ClaveHash = BCrypt.Net.BCrypt.HashPassword("admin123") },
+        new() { Id = 2, NombreUsuario = "operador", NombreCompleto = "Operador", Rol = Roles.Operador, Activo = true,
+                ClaveHash = BCrypt.Net.BCrypt.HashPassword("bodega123") },
+        new() { Id = 3, NombreUsuario = "temporal", NombreCompleto = "Con clave temporal", Rol = Roles.Operador, Activo = true,
+                DebeCambiarClave = true, ClaveHash = BCrypt.Net.BCrypt.HashPassword("temporal123") },
+        // Usuarios reservados para las pruebas que cambian claves (el fixture es compartido).
+        new() { Id = 4, NombreUsuario = "cambia", NombreCompleto = "Cambia su clave", Rol = Roles.Operador, Activo = true,
+                DebeCambiarClave = true, ClaveHash = BCrypt.Net.BCrypt.HashPassword("cambia123") },
+        new() { Id = 5, NombreUsuario = "restablecido", NombreCompleto = "Le restablecen la clave", Rol = Roles.Operador, Activo = true,
+                ClaveHash = BCrypt.Net.BCrypt.HashPassword("restablecido123") }
+    ];
+
+    public List<string> Acciones { get; } = [];
 
     public Task<Usuario?> BuscarPorNombreAsync(string nombreUsuario, CancellationToken ct)
-        => Task.FromResult(nombreUsuario == "admin" ? Admin : null);
+        => Task.FromResult(Usuarios.FirstOrDefault(u => u.NombreUsuario == nombreUsuario.ToLowerInvariant()));
+
+    public Task<Usuario?> BuscarPorIdAsync(int id, CancellationToken ct)
+        => Task.FromResult(Usuarios.FirstOrDefault(u => u.Id == id));
+
+    public Task<IReadOnlyList<UsuarioEnLista>> ListarAsync(CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<UsuarioEnLista>>(Usuarios.Select(u => new UsuarioEnLista
+        {
+            Id = u.Id, NombreUsuario = u.NombreUsuario, NombreCompleto = u.NombreCompleto, Rol = u.Rol,
+            Activo = u.Activo, DebeCambiarClave = u.DebeCambiarClave
+        }).ToList());
+
+    public Task<int> CrearAsync(string nombreUsuario, string nombreCompleto, string claveHash, string rol, CancellationToken ct)
+    {
+        if (Usuarios.Any(u => u.NombreUsuario == nombreUsuario.ToLowerInvariant()))
+            throw new PostgresException("duplicate key", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation);
+        var nuevo = new Usuario { Id = Usuarios.Count + 1, NombreUsuario = nombreUsuario.ToLowerInvariant(), NombreCompleto = nombreCompleto,
+            ClaveHash = claveHash, Rol = rol, Activo = true, DebeCambiarClave = true };
+        Usuarios.Add(nuevo);
+        return Task.FromResult(nuevo.Id);
+    }
+
+    public Task CambiarEstadoAsync(int usuarioId, bool activo, int solicitanteId, CancellationToken ct)
+    {
+        if (usuarioId == solicitanteId && !activo)
+            throw new PostgresException("No puedes desactivar tu propio usuario", "ERROR", "ERROR", "IN005");
+        var i = Usuarios.FindIndex(u => u.Id == usuarioId);
+        if (i < 0) throw new PostgresException($"El usuario {usuarioId} no existe", "ERROR", "ERROR", "IN004");
+        Usuarios[i] = Usuarios[i] with { Activo = activo };
+        return Task.CompletedTask;
+    }
+
+    public Task CambiarClaveAsync(int usuarioId, string claveHash, CancellationToken ct)
+    {
+        var i = Usuarios.FindIndex(u => u.Id == usuarioId);
+        Usuarios[i] = Usuarios[i] with { ClaveHash = claveHash, DebeCambiarClave = false };
+        Acciones.Add($"clave:{usuarioId}");
+        return Task.CompletedTask;
+    }
+
+    public Task RestablecerClaveAsync(int usuarioId, string claveTemporalHash, int solicitanteId, CancellationToken ct)
+    {
+        var i = Usuarios.FindIndex(u => u.Id == usuarioId);
+        if (i < 0) throw new PostgresException($"El usuario {usuarioId} no existe", "ERROR", "ERROR", "IN004");
+        Usuarios[i] = Usuarios[i] with { ClaveHash = claveTemporalHash, DebeCambiarClave = true };
+        Acciones.Add($"restablecer:{usuarioId}");
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>Imita el comportamiento de los procedimientos, incluidos sus errores.</summary>
