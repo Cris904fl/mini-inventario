@@ -63,6 +63,29 @@ public class InventarioRepositorio(NpgsqlDataSource datos) : IInventarioReposito
         return new ResultadoMovimiento(movimientoId, stockResultante);
     }
 
+    public async Task<ResumenInventario> ObtenerResumenAsync(int dias, string zona, CancellationToken ct)
+    {
+        await using var conexion = await datos.OpenConnectionAsync(ct);
+        return await conexion.QuerySingleAsync<ResumenInventario>(new CommandDefinition(
+            "SELECT * FROM fn_resumen_inventario(@dias, @zona)", new { dias, zona }, cancellationToken: ct));
+    }
+
+    public async Task<IReadOnlyList<MovimientosDelDia>> ObtenerMovimientosPorDiaAsync(int dias, string zona, CancellationToken ct)
+    {
+        await using var conexion = await datos.OpenConnectionAsync(ct);
+        var filas = await conexion.QueryAsync<MovimientosDelDia>(new CommandDefinition(
+            "SELECT * FROM fn_movimientos_por_dia(@dias, @zona)", new { dias, zona }, cancellationToken: ct));
+        return filas.AsList();
+    }
+
+    public async Task<IReadOnlyList<ProductoMasMovido>> ObtenerMasMovidosAsync(int dias, int limite, string zona, CancellationToken ct)
+    {
+        await using var conexion = await datos.OpenConnectionAsync(ct);
+        var filas = await conexion.QueryAsync<ProductoMasMovido>(new CommandDefinition(
+            "SELECT * FROM fn_productos_mas_movidos(@dias, @limite, @zona)", new { dias, limite, zona }, cancellationToken: ct));
+        return filas.AsList();
+    }
+
     public async Task<IReadOnlyList<MovimientoEnHistorial>> ObtenerHistorialAsync(int? productoId, string? tipo, int limite, int desplazamiento, CancellationToken ct)
     {
         await using var conexion = await datos.OpenConnectionAsync(ct);

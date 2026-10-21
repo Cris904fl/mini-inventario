@@ -67,6 +67,8 @@ public class ManejoErroresMiddleware(RequestDelegate siguiente, ILogger<ManejoEr
                 "Los datos no cumplen las restricciones de la base de datos."),
             PostgresErrorCodes.ForeignKeyViolation => Problema(StatusCodes.Status400BadRequest, "Referencia invalida",
                 "El registro hace referencia a otro que no existe."),
+            PostgresErrorCodes.InvalidParameterValue => Problema(StatusCodes.Status400BadRequest, "Parametro invalido",
+                "Uno de los parametros no es valido (por ejemplo, la zona horaria)."),
             _ => Problema(StatusCodes.Status500InternalServerError, "Error de base de datos",
                 "No fue posible completar la operacion en la base de datos.")
         };

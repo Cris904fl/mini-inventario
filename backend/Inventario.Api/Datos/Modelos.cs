@@ -38,6 +38,37 @@ public record MovimientoEnHistorial
     public long Total { get; init; }
 }
 
+/// <summary>Fila unica de <c>fn_resumen_inventario</c>.</summary>
+public record ResumenInventario
+{
+    public long Productos { get; init; }
+    public long Unidades { get; init; }
+    public long EnBajo { get; init; }
+    public long Agotados { get; init; }
+    public long EntradasPeriodo { get; init; }
+    public long SalidasPeriodo { get; init; }
+    public long MovimientosPeriodo { get; init; }
+}
+
+/// <summary>Fila de <c>fn_movimientos_por_dia</c>.</summary>
+public record MovimientosDelDia
+{
+    public DateTime Dia { get; init; }
+    public long Entradas { get; init; }
+    public long Salidas { get; init; }
+}
+
+/// <summary>Fila de <c>fn_productos_mas_movidos</c>.</summary>
+public record ProductoMasMovido
+{
+    public int ProductoId { get; init; }
+    public string Codigo { get; init; } = string.Empty;
+    public string Nombre { get; init; } = string.Empty;
+    public string Unidad { get; init; } = "UND";
+    public long Salidas { get; init; }
+    public long Entradas { get; init; }
+}
+
 /// <summary>Lo que devuelven <c>sp_registrar_entrada</c> y <c>sp_registrar_salida</c>.</summary>
 public record ResultadoMovimiento(long MovimientoId, int StockResultante);
 

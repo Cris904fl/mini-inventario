@@ -44,6 +44,18 @@ public record SolicitudProducto(
     [Range(0, 1_000_000)] int StockMinimo,
     [Range(0, 1_000_000)] int CantidadInicial);
 
+/// <summary>Todo lo que pinta el tablero en una sola respuesta.</summary>
+public record RespuestaResumen(
+    int Dias,
+    string Zona,
+    Datos.ResumenInventario Totales,
+    IReadOnlyList<DiaDelTablero> PorDia,
+    IReadOnlyList<Datos.ProductoMasMovido> MasMovidos,
+    IReadOnlyList<Datos.ProductoEnInventario> BajoMinimo,
+    IReadOnlyList<MovimientoResumen> Ultimos);
+
+public record DiaDelTablero(string Dia, long Entradas, long Salidas);
+
 public record PaginaDeMovimientos(
     IReadOnlyList<MovimientoResumen> Elementos,
     long Total,

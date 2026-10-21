@@ -167,6 +167,23 @@ public class RepositorioFalso : IInventarioRepositorio
     public Task<IReadOnlyList<MovimientoEnHistorial>> ObtenerHistorialAsync(int? productoId, string? tipo, int limite, int desplazamiento, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<MovimientoEnHistorial>>([]);
 
+    public Task<ResumenInventario> ObtenerResumenAsync(int dias, string zona, CancellationToken ct)
+        => Task.FromResult(new ResumenInventario
+        {
+            Productos = Productos.Count, Unidades = Productos.Sum(p => p.Cantidad),
+            EnBajo = Productos.Count(p => p.Estado == "BAJO"), Agotados = Productos.Count(p => p.Estado == "AGOTADO"),
+            EntradasPeriodo = 10, SalidasPeriodo = 4, MovimientosPeriodo = 3
+        });
+
+    public Task<IReadOnlyList<MovimientosDelDia>> ObtenerMovimientosPorDiaAsync(int dias, string zona, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<MovimientosDelDia>>(Enumerable.Range(0, dias)
+            .Select(i => new MovimientosDelDia { Dia = DateTime.Today.AddDays(i - dias + 1), Entradas = i, Salidas = 0 })
+            .ToList());
+
+    public Task<IReadOnlyList<ProductoMasMovido>> ObtenerMasMovidosAsync(int dias, int limite, string zona, CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<ProductoMasMovido>>(
+            [new ProductoMasMovido { ProductoId = 1, Codigo = "EST-120", Nombre = "Estiba", Salidas = 4, Entradas = 10 }]);
+
     private ProductoEnInventario Buscar(int productoId)
         => Productos.FirstOrDefault(p => p.Id == productoId)
            ?? throw new PostgresException($"El producto {productoId} no existe o esta inactivo", "ERROR", "ERROR", "IN002");

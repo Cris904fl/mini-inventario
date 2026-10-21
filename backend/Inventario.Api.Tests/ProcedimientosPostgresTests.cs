@@ -86,6 +86,19 @@ public class ProcedimientosPostgresTests : IAsyncLifetime
     }
 
     [SkippableFact]
+    public async Task Los_movimientos_por_dia_traen_una_fila_por_dia_y_cuentan_el_de_hoy()
+    {
+        await _repositorio.RegistrarEntradaAsync(_productoId, 3, "tests", null, CancellationToken.None);
+
+        var dias = await _repositorio.ObtenerMovimientosPorDiaAsync(5, "America/Bogota", CancellationToken.None);
+
+        Assert.Equal(5, dias.Count);
+        Assert.Equal(dias.Select(d => d.Dia).OrderBy(d => d), dias.Select(d => d.Dia));
+        // La entrada recien hecha (y la inicial de 10 del producto de prueba) caen en el ultimo dia.
+        Assert.True(dias[^1].Entradas >= 13);
+    }
+
+    [SkippableFact]
     public async Task Dos_salidas_concurrentes_no_dejan_el_stock_negativo()
     {
         // Hay 10 unidades. Dos salidas de 7 al mismo tiempo: una debe pasar y la
