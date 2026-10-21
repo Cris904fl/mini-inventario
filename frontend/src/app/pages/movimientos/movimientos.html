@@ -1,0 +1,111 @@
+<header class="cabecera-pagina">
+  <div>
+    <p class="rotulo">Kárdex</p>
+    <h1>Registrar movimiento</h1>
+  </div>
+  <a routerLink="/historial" class="boton">Ver historial</a>
+</header>
+
+<div class="dos-columnas">
+  <form class="ficha formulario" (ngSubmit)="registrar()" novalidate>
+    <div class="segmentos" role="radiogroup" aria-label="Tipo de movimiento">
+      <button type="button" class="segmento entrada" [class.activo]="tipo() === 'ENTRADA'"
+              role="radio" [attr.aria-checked]="tipo() === 'ENTRADA'" (click)="elegirTipo('ENTRADA')">
+        <span class="tipo ENTRADA">ENTRADA</span>
+        <small>Ingresa mercancía a bodega</small>
+      </button>
+      <button type="button" class="segmento salida" [class.activo]="tipo() === 'SALIDA'"
+              role="radio" [attr.aria-checked]="tipo() === 'SALIDA'" (click)="elegirTipo('SALIDA')">
+        <span class="tipo SALIDA">SALIDA</span>
+        <small>Retira mercancía de bodega</small>
+      </button>
+    </div>
+
+    <div class="campos">
+      <div class="campo">
+        <label for="producto">Producto</label>
+        <select id="producto" name="producto" class="entrada" [ngModel]="productoId()" (ngModelChange)="productoId.set($event)"
+                [disabled]="cargandoProductos()" required>
+          <option [ngValue]="null" disabled>{{ cargandoProductos() ? 'Cargando…' : 'Selecciona un producto' }}</option>
+          @for (p of productos(); track p.id) {
+            <option [ngValue]="p.id">{{ p.codigo }} · {{ p.nombre }} ({{ p.cantidad }} {{ p.unidad }})</option>
+          }
+        </select>
+      </div>
+
+      <div class="campo">
+        <label for="cantidad">Cantidad</label>
+        <input id="cantidad" name="cantidad" class="entrada num" type="number" inputmode="numeric" min="1" step="1"
+               [ngModel]="cantidad()" (ngModelChange)="cantidad.set($event)" placeholder="0"
+               [class.invalida]="excede()" required />
+        @if (excede()) {
+          <span class="ayuda error">Supera el stock disponible; la API lo rechazará.</span>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="observacion">Observación <span class="silencio">(opcional)</span></label>
+        <textarea id="observacion" name="observacion" class="entrada" rows="2" maxlength="300"
+                  [(ngModel)]="observacion" placeholder="Orden de compra, despacho, destino…"></textarea>
+      </div>
+    </div>
+
+    @if (error(); as e) {
+      <div class="aviso error aparece" role="alert">
+        <div>
+          <strong>{{ e.titulo }}</strong>
+          <small>{{ e.detalle }}</small>
+          @if (e.codigo) { <small class="mono">código {{ e.codigo }}</small> }
+        </div>
+      </div>
+    }
+
+    @if (resultado(); as r) {
+      <div class="aviso exito aparece" role="status">
+        <div>
+          <strong>{{ r.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }} registrada</strong>
+          <small>Movimiento <span class="mono">#{{ r.movimientoId }}</span> · {{ r.cantidad }} unidades · stock resultante <span class="mono">{{ r.stockResultante }}</span></small>
+        </div>
+      </div>
+    }
+
+    <div class="pie">
+      <button type="submit" class="boton principal" [class.salida]="tipo() === 'SALIDA'" [disabled]="!listo()">
+        {{ enviando() ? 'Registrando…' : (tipo() === 'ENTRADA' ? 'Registrar entrada' : 'Registrar salida') }}
+      </button>
+    </div>
+  </form>
+
+  <aside class="ficha tarjeta-producto">
+    @if (producto(); as p) {
+      <div class="ficha-cabecera">
+        <span class="mono">{{ p.codigo }}</span>
+        <span class="estado" [class]="'estado ' + p.estado">{{ p.estado === 'BAJO' ? 'Stock bajo' : (p.estado === 'AGOTADO' ? 'Agotado' : 'Disponible') }}</span>
+      </div>
+      <div class="cuerpo">
+        <h2>{{ p.nombre }}</h2>
+        @if (p.descripcion) { <p class="silencio pequeno">{{ p.descripcion }}</p> }
+
+        <dl class="cifras">
+          <div>
+            <dt class="rotulo">En bodega</dt>
+            <dd class="mono">{{ p.cantidad }} <small>{{ p.unidad }}</small></dd>
+          </div>
+          <div>
+            <dt class="rotulo">Mínimo</dt>
+            <dd class="mono">{{ p.stockMinimo }}</dd>
+          </div>
+          <div [class.negativo]="excede()">
+            <dt class="rotulo">Quedaría</dt>
+            <dd class="mono">{{ stockPrevisto() ?? '—' }}</dd>
+          </div>
+        </dl>
+        <p class="ayuda">La cantidad real la confirma la base de datos al registrar; esta cifra solo orienta.</p>
+      </div>
+    } @else {
+      <div class="cuerpo vacio">
+        <p class="silencio">Selecciona un producto para ver su ficha.</p>
+      </div>
+    }
+  </aside>
+</div>

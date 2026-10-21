@@ -1,0 +1,242 @@
+/* =============================================================================
+   Kárdex · hoja de estilos global
+   Una tarjeta de kárdex de bodega: papel claro, tinta oscura, numeros en
+   monoespaciada y un unico color de acento. Los componentes solo definen su
+   disposicion; los colores y tipografias salen de estas variables.
+   ========================================================================== */
+
+:root {
+  --papel: #f4f0e6;
+  --papel-2: #ebe6d9;
+  --papel-3: #e2dccc;
+  --tinta: #1d1b17;
+  --tinta-2: #5d584e;
+  --tinta-3: #8c8679;
+  --linea: #d3ccbb;
+  --linea-fuerte: #b9b09b;
+
+  --acento: #0f5c4a;          /* verde bosque: acciones y entradas */
+  --acento-tinta: #f4f0e6;
+  --acento-suave: #d7e7df;
+  --salida: #a8402a;          /* oxido: salidas, agotado, errores */
+  --salida-suave: #f0d9d1;
+  --bajo: #b7791f;            /* ambar: stock bajo */
+  --bajo-suave: #f2e4c4;
+
+  --radio: 4px;
+  --sombra: 0 1px 0 rgba(29, 27, 23, 0.06), 0 8px 24px -16px rgba(29, 27, 23, 0.35);
+  --fuente: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papel: #16150f;
+    --papel-2: #1e1c15;
+    --papel-3: #27251b;
+    --tinta: #ece7da;
+    --tinta-2: #a9a292;
+    --tinta-3: #7a7466;
+    --linea: #312e24;
+    --linea-fuerte: #4a4536;
+    --acento: #4fb08f;
+    --acento-tinta: #0f1a15;
+    --acento-suave: #1d3a30;
+    --salida: #e06a4e;
+    --salida-suave: #3d1f17;
+    --bajo: #d9a548;
+    --bajo-suave: #3b2d12;
+    --sombra: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 24px -16px rgba(0, 0, 0, 0.8);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--tinta);
+  background: var(--papel);
+  /* textura sutil de papel: lineas horizontales muy tenues */
+  background-image: repeating-linear-gradient(
+    180deg, transparent 0 31px, rgba(29, 27, 23, 0.025) 31px 32px);
+}
+
+h1, h2, h3 { margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.15rem; }
+p { margin: 0; }
+a { color: inherit; }
+
+input, select, textarea, button { font: inherit; color: inherit; }
+
+/* --- Tipografia de apoyo ---------------------------------------------- */
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.rotulo {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+}
+.silencio { color: var(--tinta-2); }
+.pequeno { font-size: 0.85rem; }
+
+/* --- Superficies --------------------------------------------------------- */
+
+.ficha {
+  background: var(--papel-2);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.ficha-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--linea);
+}
+
+/* --- Formularios --------------------------------------------------------- */
+
+.campo { display: grid; gap: 6px; }
+.campo > label { font-size: 0.85rem; font-weight: 500; color: var(--tinta-2); }
+
+.entrada {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--papel);
+  color: var(--tinta);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.entrada::placeholder { color: var(--tinta-3); }
+.entrada:focus { border-color: var(--acento); box-shadow: 0 0 0 3px var(--acento-suave); }
+.entrada:disabled { opacity: 0.6; }
+.entrada.invalida { border-color: var(--salida); }
+select.entrada { appearance: auto; }
+textarea.entrada { resize: vertical; min-height: 72px; }
+
+.ayuda { font-size: 0.8rem; color: var(--tinta-2); }
+.ayuda.error { color: var(--salida); }
+
+/* --- Botones ------------------------------------------------------------- */
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--papel);
+  color: var(--tinta);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+}
+.boton:hover { background: var(--papel-3); }
+.boton:active { transform: translateY(1px); }
+.boton:disabled { opacity: 0.55; cursor: not-allowed; }
+.boton.principal { background: var(--acento); border-color: var(--acento); color: var(--acento-tinta); }
+.boton.principal:hover { filter: brightness(1.08); }
+.boton.peligro { color: var(--salida); border-color: var(--salida); }
+.boton.compacto { padding: 6px 10px; font-size: 0.85rem; }
+.boton.plano { border-color: transparent; background: transparent; }
+.boton.plano:hover { background: var(--papel-3); }
+
+/* --- Avisos -------------------------------------------------------------- */
+
+.aviso {
+  display: grid;
+  grid-template-columns: 4px 1fr;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--papel);
+}
+.aviso::before { content: ''; border-radius: 2px; background: var(--tinta-3); }
+.aviso.exito::before { background: var(--acento); }
+.aviso.error { border-color: var(--salida); background: var(--salida-suave); }
+.aviso.error::before { background: var(--salida); }
+.aviso.alerta::before { background: var(--bajo); }
+.aviso strong { display: block; font-weight: 600; }
+.aviso small { display: block; color: var(--tinta-2); margin-top: 2px; }
+
+/* --- Estados del producto --------------------------------------------- */
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.estado::before { content: ''; width: 8px; height: 8px; border-radius: 1px; background: currentColor; }
+.estado.DISPONIBLE { color: var(--acento); }
+.estado.BAJO { color: var(--bajo); }
+.estado.AGOTADO { color: var(--salida); }
+
+.tipo { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; }
+.tipo.ENTRADA { color: var(--acento); }
+.tipo.SALIDA { color: var(--salida); }
+
+/* --- Tablas -------------------------------------------------------------- */
+
+.tabla-marco { overflow-x: auto; }
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+.tabla th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tinta-2);
+  border-bottom: 1px solid var(--linea-fuerte);
+  white-space: nowrap;
+}
+.tabla td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--linea);
+  vertical-align: middle;
+}
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover td { background: rgba(29, 27, 23, 0.03); }
+@media (prefers-color-scheme: dark) { .tabla tbody tr:hover td { background: rgba(255, 255, 255, 0.03); } }
+.tabla th.num, .tabla td.num { text-align: right; }
+.tabla .vacio { padding: 36px 14px; text-align: center; color: var(--tinta-2); }
+
+/* --- Utilidades ---------------------------------------------------------- */
+
+.fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.espacio { flex: 1; }
+/* .oculto-movil solo se oculta en movil; en escritorio conserva el display propio del elemento (td, span...). */
+@media (max-width: 720px) { .oculto-movil { display: none; } }
+
+@keyframes aparecer { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.aparece { animation: aparecer 0.18s ease-out; }
+
+/* Las celdas con codigos, cifras y fechas no se parten en dos lineas. */
+.tabla td.mono, .tabla td.num, .tabla td.fecha-celda { white-space: nowrap; }
+.tabla .producto { min-width: 200px; }
+@media (max-width: 720px) { .tabla .producto { min-width: 150px; } }

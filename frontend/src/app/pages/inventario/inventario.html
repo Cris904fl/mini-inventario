@@ -1,0 +1,150 @@
+<header class="cabecera-pagina">
+  <div>
+    <p class="rotulo">Estado actual</p>
+    <h1>Inventario</h1>
+  </div>
+  <div class="fila">
+    <button type="button" class="boton" (click)="abrirAlta()">Nuevo producto</button>
+    <a routerLink="/movimientos" class="boton principal">Registrar movimiento</a>
+  </div>
+</header>
+
+<section class="resumen">
+  <div class="dato">
+    <span class="rotulo">Productos</span>
+    <strong class="mono">{{ resumen().total }}</strong>
+  </div>
+  <div class="dato">
+    <span class="rotulo">Unidades</span>
+    <strong class="mono">{{ resumen().unidades | number }}</strong>
+  </div>
+  <div class="dato" [class.atencion]="resumen().bajo > 0">
+    <span class="rotulo">Stock bajo</span>
+    <strong class="mono">{{ resumen().bajo }}</strong>
+  </div>
+  <div class="dato" [class.critico]="resumen().agotados > 0">
+    <span class="rotulo">Agotados</span>
+    <strong class="mono">{{ resumen().agotados }}</strong>
+  </div>
+</section>
+
+@if (creado(); as p) {
+  <div class="aviso exito aparece" role="status">
+    <div>
+      <strong>Producto creado</strong>
+      <small><span class="mono">{{ p.codigo }}</span> · {{ p.nombre }} · {{ p.cantidad }} {{ p.unidad }}</small>
+    </div>
+  </div>
+}
+
+@if (mostrarAlta()) {
+  <form class="ficha alta aparece" (ngSubmit)="guardarProducto()" novalidate>
+    <div class="ficha-cabecera">
+      <h2>Nuevo producto</h2>
+      <button type="button" class="boton compacto plano" (click)="cerrarAlta()">Cancelar</button>
+    </div>
+    <div class="alta-campos">
+      <div class="campo">
+        <label for="codigo">Código</label>
+        <input id="codigo" name="codigo" class="entrada mono" [(ngModel)]="nuevo.codigo" placeholder="EST-120" maxlength="20" required />
+      </div>
+      <div class="campo ancho">
+        <label for="nombre">Nombre</label>
+        <input id="nombre" name="nombre" class="entrada" [(ngModel)]="nuevo.nombre" placeholder="Estiba de madera 120x100" maxlength="120" required />
+      </div>
+      <div class="campo">
+        <label for="unidad">Unidad</label>
+        <input id="unidad" name="unidad" class="entrada" [(ngModel)]="nuevo.unidad" placeholder="UND" maxlength="20" />
+      </div>
+      <div class="campo">
+        <label for="minimo">Stock mínimo</label>
+        <input id="minimo" name="minimo" class="entrada num" type="number" min="0" [(ngModel)]="nuevo.stockMinimo" />
+      </div>
+      <div class="campo">
+        <label for="inicial">Cantidad inicial</label>
+        <input id="inicial" name="inicial" class="entrada num" type="number" min="0" [(ngModel)]="nuevo.cantidadInicial" />
+      </div>
+      <div class="campo ancho">
+        <label for="descripcion">Descripción <span class="silencio">(opcional)</span></label>
+        <input id="descripcion" name="descripcion" class="entrada" [(ngModel)]="nuevo.descripcion" maxlength="500" />
+      </div>
+    </div>
+    @if (errorAlta(); as e) {
+      <div class="aviso error alta-aviso" role="alert">
+        <div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div>
+      </div>
+    }
+    <div class="alta-pie">
+      <span class="ayuda">Si indicas cantidad inicial, queda registrada como una entrada en el historial.</span>
+      <button type="submit" class="boton principal" [disabled]="guardando() || !nuevo.codigo || !nuevo.nombre">
+        {{ guardando() ? 'Guardando…' : 'Guardar producto' }}
+      </button>
+    </div>
+  </form>
+}
+
+<section class="ficha">
+  <div class="ficha-cabecera herramientas">
+    <input class="entrada buscador" type="search" placeholder="Buscar por código o nombre"
+           [ngModel]="busqueda" (ngModelChange)="alBuscar($event)" aria-label="Buscar producto" />
+    <label class="conmutador">
+      <input type="checkbox" [checked]="soloBajo()" (change)="alternarSoloBajo()" />
+      <span>Solo bajo mínimo</span>
+    </label>
+  </div>
+
+  @if (error(); as e) {
+    <div class="aviso error" role="alert" style="margin: 16px">
+      <div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div>
+    </div>
+  }
+
+  <div class="tabla-marco">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Producto</th>
+          <th class="num">Cantidad</th>
+          <th class="oculto-movil">Nivel</th>
+          <th>Estado</th>
+          <th class="oculto-movil">Último movimiento</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of productos(); track p.id) {
+          <tr>
+            <td class="mono">{{ p.codigo }}</td>
+            <td>
+              <div class="producto">
+                <span>{{ p.nombre }}</span>
+                @if (p.descripcion) { <small class="silencio">{{ p.descripcion }}</small> }
+              </div>
+            </td>
+            <td class="num">
+              <span class="cantidad">{{ p.cantidad | number }}</span>
+              <small class="silencio"> {{ p.unidad }}</small>
+            </td>
+            <td class="oculto-movil">
+              <div class="nivel" [title]="'Mínimo: ' + p.stockMinimo">
+                <span class="nivel-barra" [class]="'nivel-barra ' + p.estado" [style.width.%]="nivel(p)"></span>
+                <span class="nivel-marca"></span>
+              </div>
+              <small class="silencio mono">mín. {{ p.stockMinimo }}</small>
+            </td>
+            <td><span class="estado" [class]="'estado ' + p.estado">{{ p.estado === 'BAJO' ? 'Stock bajo' : (p.estado === 'AGOTADO' ? 'Agotado' : 'Disponible') }}</span></td>
+            <td class="oculto-movil silencio pequeno fecha-celda">
+              {{ p.ultimoMovimiento ? (p.ultimoMovimiento | date: 'dd/MM/yyyy HH:mm') : '—' }}
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vacio">
+              {{ cargando() ? 'Cargando inventario…' : 'No hay productos que coincidan.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

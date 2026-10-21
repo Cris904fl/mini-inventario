@@ -1,0 +1,72 @@
+<div class="marco">
+  <aside class="lateral">
+    <a class="marca" routerLink="/inventario">
+      <span class="marca-sello mono">KX</span>
+      <span class="marca-texto">
+        <strong>Kárdex</strong>
+        <small>control de inventario</small>
+      </span>
+    </a>
+
+    <nav class="nav">
+      @for (s of secciones; track s.ruta) {
+        <a [routerLink]="s.ruta" routerLinkActive="activa" class="nav-item">
+          <svg class="icono" viewBox="0 0 20 20" aria-hidden="true">
+            @switch (s.icono) {
+              @case ('inventario') {
+                <path d="M3 6.5 10 3l7 3.5v7L10 17l-7-3.5v-7Z M3 6.5l7 3.5 7-3.5 M10 10v7" />
+              }
+              @case ('movimiento') {
+                <path d="M4 7h12m0 0-3-3m3 3-3 3 M16 13H4m0 0 3-3m-3 3 3 3" />
+              }
+              @case ('historial') {
+                <path d="M4 5h12M4 10h12M4 15h8" />
+              }
+            }
+          </svg>
+          <span>{{ s.nombre }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="usuario">
+      <span class="rotulo">Sesión</span>
+      <strong>{{ auth.nombreCompleto() || auth.usuario() }}</strong>
+      <span class="pequeno silencio mono">&#64;{{ auth.usuario() }}</span>
+      <button type="button" class="boton compacto" (click)="salir()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <header class="superior">
+    <a class="marca" routerLink="/inventario">
+      <span class="marca-sello mono">KX</span>
+      <strong>Kárdex</strong>
+    </a>
+    <button type="button" class="boton compacto plano" (click)="salir()">Salir</button>
+  </header>
+
+  <main class="contenido">
+    <router-outlet />
+  </main>
+
+  <nav class="inferior">
+    @for (s of secciones; track s.ruta) {
+      <a [routerLink]="s.ruta" routerLinkActive="activa" class="inferior-item">
+        <svg class="icono" viewBox="0 0 20 20" aria-hidden="true">
+          @switch (s.icono) {
+            @case ('inventario') {
+              <path d="M3 6.5 10 3l7 3.5v7L10 17l-7-3.5v-7Z M3 6.5l7 3.5 7-3.5 M10 10v7" />
+            }
+            @case ('movimiento') {
+              <path d="M4 7h12m0 0-3-3m3 3-3 3 M16 13H4m0 0 3-3m-3 3 3 3" />
+            }
+            @case ('historial') {
+              <path d="M4 5h12M4 10h12M4 15h8" />
+            }
+          }
+        </svg>
+        <span>{{ s.nombre }}</span>
+      </a>
+    }
+  </nav>
+</div>

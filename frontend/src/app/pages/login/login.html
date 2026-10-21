@@ -1,0 +1,35 @@
+<div class="escena">
+  <form class="tarjeta aparece" (ngSubmit)="ingresar()" novalidate>
+    <div class="cabecera">
+      <span class="sello mono">KX</span>
+      <div>
+        <h1>Kárdex</h1>
+        <p class="silencio">Control de inventario de bodega</p>
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="usuario">Usuario</label>
+      <input id="usuario" class="entrada" name="usuario" type="text" autocomplete="username"
+             [(ngModel)]="usuario" [disabled]="enviando()" autofocus />
+    </div>
+
+    <div class="campo">
+      <label for="clave">Clave</label>
+      <input id="clave" class="entrada" name="clave" type="password" autocomplete="current-password"
+             [(ngModel)]="clave" [disabled]="enviando()" />
+    </div>
+
+    @if (error()) {
+      <div class="aviso error" role="alert">
+        <div><strong>No fue posible ingresar</strong><small>{{ error() }}</small></div>
+      </div>
+    }
+
+    <button type="submit" class="boton principal" [disabled]="enviando()">
+      {{ enviando() ? 'Verificando…' : 'Ingresar' }}
+    </button>
+
+    <p class="pie pequeno silencio">Acceso con token JWT. Usuario de prueba: <span class="mono">admin</span></p>
+  </form>
+</div>

@@ -1,0 +1,79 @@
+.cabecera-pagina {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.cabecera-pagina .boton { text-decoration: none; }
+
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.dato {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--linea);
+  border-radius: var(--radio);
+  background: var(--papel-2);
+}
+.dato strong { font-size: 1.5rem; font-weight: 500; }
+.dato.atencion strong { color: var(--bajo); }
+.dato.critico strong { color: var(--salida); }
+
+.alta { margin-bottom: 20px; }
+.alta-campos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 18px;
+}
+.alta-campos .ancho { grid-column: span 2; }
+.alta-aviso { margin: 0 18px; }
+.alta-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-top: 1px solid var(--linea);
+}
+
+.herramientas { align-items: center; }
+.buscador { max-width: 360px; }
+.conmutador { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; white-space: nowrap; cursor: pointer; }
+.conmutador input { accent-color: var(--acento); width: 16px; height: 16px; }
+
+.producto { display: grid; }
+.producto small { font-size: 0.78rem; }
+.cantidad { font-size: 1.05rem; font-weight: 500; }
+
+.nivel {
+  position: relative;
+  width: 120px;
+  height: 6px;
+  background: var(--papel-3);
+  border-radius: 3px;
+  overflow: visible;
+  margin-bottom: 4px;
+}
+.nivel-barra { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--acento); }
+.nivel-barra.BAJO { background: var(--bajo); }
+.nivel-barra.AGOTADO { background: var(--salida); }
+.nivel-marca { position: absolute; left: 50%; top: -3px; width: 1px; height: 12px; background: var(--tinta-3); }
+
+.aviso { margin-bottom: 20px; }
+
+@media (max-width: 720px) {
+  .resumen { grid-template-columns: repeat(2, 1fr); }
+  .alta-campos { grid-template-columns: 1fr 1fr; }
+  .alta-campos .ancho { grid-column: span 2; }
+  .herramientas { flex-direction: column; align-items: stretch; }
+  .buscador { max-width: none; }
+}

@@ -1,0 +1,35 @@
+.escena {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.tarjeta {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  gap: 18px;
+  padding: 32px 28px 24px;
+  background: var(--papel-2);
+  border: 1px solid var(--linea);
+  border-top: 3px solid var(--acento);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.cabecera { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.sello {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--tinta);
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  transform: rotate(-4deg);
+}
+
+.boton { margin-top: 4px; }
+.pie { text-align: center; margin-top: 4px; }

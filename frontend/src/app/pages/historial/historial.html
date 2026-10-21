@@ -1,0 +1,83 @@
+<header class="cabecera-pagina">
+  <div>
+    <p class="rotulo">Kárdex</p>
+    <h1>Historial de movimientos</h1>
+  </div>
+  <a routerLink="/movimientos" class="boton principal">Registrar movimiento</a>
+</header>
+
+<section class="ficha">
+  <div class="ficha-cabecera filtros">
+    <div class="segmentos" role="group" aria-label="Tipo">
+      <button type="button" class="chip" [class.activo]="tipo() === null" (click)="filtrarTipo(null)">Todos</button>
+      <button type="button" class="chip" [class.activo]="tipo() === 'ENTRADA'" (click)="filtrarTipo('ENTRADA')">Entradas</button>
+      <button type="button" class="chip" [class.activo]="tipo() === 'SALIDA'" (click)="filtrarTipo('SALIDA')">Salidas</button>
+    </div>
+    <select class="entrada selector" aria-label="Producto" [ngModel]="productoId()" (ngModelChange)="filtrarProducto($event)">
+      <option [ngValue]="null">Todos los productos</option>
+      @for (p of productos(); track p.id) {
+        <option [ngValue]="p.id">{{ p.codigo }} · {{ p.nombre }}</option>
+      }
+    </select>
+  </div>
+
+  @if (error(); as e) {
+    <div class="aviso error" role="alert" style="margin: 16px">
+      <div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div>
+    </div>
+  }
+
+  <div class="tabla-marco">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Tipo</th>
+          <th class="num">Cantidad</th>
+          <th class="num oculto-movil">Saldo</th>
+          <th class="oculto-movil">Usuario</th>
+          <th class="oculto-movil">Observación</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of movimientos(); track m.id) {
+          <tr>
+            <td class="pequeno">
+              <div class="fecha">
+                <span>{{ m.fecha | date: 'dd/MM/yyyy' }}</span>
+                <small class="silencio mono">{{ m.fecha | date: 'HH:mm' }}</small>
+              </div>
+            </td>
+            <td>
+              <div class="producto">
+                <span>{{ m.producto }}</span>
+                <small class="silencio mono">{{ m.codigo }}</small>
+              </div>
+            </td>
+            <td><span class="tipo" [class]="'tipo ' + m.tipo">{{ m.tipo }}</span></td>
+            <td class="num" [class]="'num signo ' + m.tipo">{{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}</td>
+            <td class="num oculto-movil">{{ m.stockResultante }}</td>
+            <td class="oculto-movil mono pequeno">{{ m.usuario }}</td>
+            <td class="oculto-movil silencio pequeno">{{ m.observacion || '—' }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="vacio">{{ cargando() ? 'Cargando movimientos…' : 'No hay movimientos con ese filtro.' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="paginacion">
+    <span class="pequeno silencio">
+      @if (total() > 0) { {{ desde() }}–{{ hasta() }} de {{ total() }} movimientos } @else { Sin resultados }
+    </span>
+    <div class="fila">
+      <button type="button" class="boton compacto" (click)="irA(pagina() - 1)" [disabled]="pagina() <= 1">Anterior</button>
+      <span class="mono pequeno">{{ pagina() }} / {{ totalPaginas() || 1 }}</span>
+      <button type="button" class="boton compacto" (click)="irA(pagina() + 1)" [disabled]="pagina() >= totalPaginas()">Siguiente</button>
+    </div>
+  </footer>
+</section>
