@@ -193,7 +193,9 @@ Frontend: `npm test` corre las pruebas con Vitest.
   Muestra el stock que quedaría como orientación, pero la regla la aplica la base: si no alcanza, el 409
   de la API se muestra tal cual con su código.
 - **Historial**: paginado, con filtros por tipo y producto, saldo tras cada movimiento y usuario.
-- **Responsive**: barra lateral en escritorio y pestañas inferiores en móvil; tema claro u oscuro según el sistema.
+- **Responsive**: barra lateral en escritorio y pestañas inferiores en móvil.
+- **Tema** claro u oscuro: por defecto sigue al sistema operativo y se puede fijar desde el selector
+  (login, barra lateral o barra superior); la elección queda guardada en el navegador.
 
 ## Capturas
 

@@ -25,6 +25,8 @@
         <a routerLink="/cambiar-clave" class="boton compacto plano">Cambiar clave</a>
         <button type="button" class="boton compacto" (click)="salir()">Cerrar sesión</button>
       </div>
+      <span class="rotulo tema-rotulo">Tema</span>
+      <app-tema-selector />
     </div>
   </aside>
 
@@ -34,6 +36,7 @@
       <strong>Kárdex</strong>
     </a>
     <div class="fila">
+      <app-tema-selector />
       <a routerLink="/cambiar-clave" class="boton compacto plano" aria-label="Cambiar clave">Clave</a>
       <button type="button" class="boton compacto plano" (click)="salir()">Salir</button>
     </div>

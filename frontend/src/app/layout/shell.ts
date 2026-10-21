@@ -2,6 +2,7 @@ import { Component, computed, inject } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { TemaSelector } from './tema-selector';
 
 interface Seccion {
   ruta: string;
@@ -15,7 +16,7 @@ interface Seccion {
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet, TemaSelector],
   templateUrl: './shell.html',
   styleUrl: './shell.css',
 })

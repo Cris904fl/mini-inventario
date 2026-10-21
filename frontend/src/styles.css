@@ -29,8 +29,10 @@
   --mono: 'IBM Plex Mono', 'Cascadia Mono', Consolas, monospace;
 }
 
+/* Tema oscuro: por el sistema (salvo que el usuario fije claro) o fijado por el usuario.
+   El atributo data-theme lo pone TemaService en <html>. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --papel: #16150f;
     --papel-2: #1e1c15;
     --papel-3: #27251b;
@@ -48,6 +50,24 @@
     --bajo-suave: #3b2d12;
     --sombra: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 24px -16px rgba(0, 0, 0, 0.8);
   }
+}
+:root[data-theme="dark"] {
+  --papel: #16150f;
+  --papel-2: #1e1c15;
+  --papel-3: #27251b;
+  --tinta: #ece7da;
+  --tinta-2: #a9a292;
+  --tinta-3: #7a7466;
+  --linea: #312e24;
+  --linea-fuerte: #4a4536;
+  --acento: #4fb08f;
+  --acento-tinta: #0f1a15;
+  --acento-suave: #1d3a30;
+  --salida: #e06a4e;
+  --salida-suave: #3d1f17;
+  --bajo: #d9a548;
+  --bajo-suave: #3b2d12;
+  --sombra: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 24px -16px rgba(0, 0, 0, 0.8);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -223,7 +243,8 @@ textarea.entrada { resize: vertical; min-height: 72px; }
 }
 .tabla tbody tr:last-child td { border-bottom: 0; }
 .tabla tbody tr:hover td { background: rgba(29, 27, 23, 0.03); }
-@media (prefers-color-scheme: dark) { .tabla tbody tr:hover td { background: rgba(255, 255, 255, 0.03); } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tabla tbody tr:hover td { background: rgba(255, 255, 255, 0.03); } }
+:root[data-theme="dark"] .tabla tbody tr:hover td { background: rgba(255, 255, 255, 0.03); }
 .tabla th.num, .tabla td.num { text-align: right; }
 .tabla .vacio { padding: 36px 14px; text-align: center; color: var(--tinta-2); }
 

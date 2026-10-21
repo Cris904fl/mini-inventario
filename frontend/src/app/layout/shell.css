@@ -60,6 +60,7 @@
   border-top: 1px dashed var(--linea-fuerte);
 }
 .usuario .boton { margin-top: 8px; justify-self: start; }
+.tema-rotulo { margin-top: 12px; }
 
 .superior { display: none; }
 .inferior { display: none; }
@@ -87,6 +88,7 @@
     border-bottom: 1px solid var(--linea);
   }
   .superior .marca-sello { width: 28px; height: 28px; font-size: 0.8rem; }
+  .superior .fila { gap: 6px; }
 
   .contenido { padding: 18px 16px 88px; }
 

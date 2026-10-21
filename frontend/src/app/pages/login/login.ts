@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { describirError } from '../../core/problema';
+import { TemaSelector } from '../../layout/tema-selector';
 
 @Component({
   selector: 'app-login',
-  imports: [FormsModule],
+  imports: [FormsModule, TemaSelector],
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
