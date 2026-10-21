@@ -206,7 +206,25 @@ Frontend: `npm test` corre las pruebas con Vitest.
 
 ## Capturas
 
-En [`docs/capturas`](docs/capturas): tablero de resumen, login, inventario, registro de una entrada,
-error de stock insuficiente, historial, vistas en móvil (inventario y movimiento), administración de
-usuarios y el cambio de clave obligatorio. La interfaz sigue el tema del
+Tablero de inicio, con las cifras del período y el gráfico de entradas y salidas por día:
+
+![Tablero de resumen](docs/capturas/00-resumen.jpg)
+
+Inventario actual con el estado de cada producto y su nivel frente al mínimo:
+
+![Inventario](docs/capturas/02-inventario.jpg)
+
+Salida rechazada por la base de datos: el 409 llega con el mensaje del procedimiento y el código IN001:
+
+![Error de stock insuficiente](docs/capturas/04-error-stock-insuficiente.jpg)
+
+Vista en móvil del inventario y del registro de movimiento:
+
+<p>
+  <img src="docs/capturas/06-movil-inventario.jpg" alt="Inventario en móvil" width="280">
+  <img src="docs/capturas/07-movil-movimiento.jpg" alt="Registro de movimiento en móvil" width="280">
+</p>
+
+Las demás (login, entrada registrada, historial, usuarios y cambio de clave obligatorio) están en
+[`docs/capturas`](docs/capturas). La interfaz sigue el tema del
 sistema, por eso hay capturas en claro y en oscuro.
