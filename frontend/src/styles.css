@@ -144,6 +144,7 @@ textarea.entrada { resize: vertical; min-height: 72px; }
   background: var(--papel);
   color: var(--tinta);
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.05s;
 }

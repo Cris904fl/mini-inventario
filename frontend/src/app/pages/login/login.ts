@@ -30,7 +30,12 @@ export class LoginPage {
     this.enviando.set(true);
 
     this.auth.login(this.usuario.trim(), this.clave).subscribe({
-      next: () => {
+      next: (r) => {
+        // Con clave temporal no se puede ir a ninguna otra pantalla.
+        if (r.debeCambiarClave) {
+          this.router.navigateByUrl('/cambiar-clave');
+          return;
+        }
         const volverA = this.ruta.snapshot.queryParamMap.get('volverA');
         this.router.navigateByUrl(volverA && volverA.startsWith('/') ? volverA : '/inventario');
       },

@@ -1,6 +1,13 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+
+interface Seccion {
+  ruta: string;
+  nombre: string;
+  icono: 'inventario' | 'movimiento' | 'historial' | 'usuarios';
+}
 
 /**
  * Marco de la aplicacion: barra lateral en escritorio, barra superior y
@@ -8,18 +15,29 @@ import { AuthService } from '../core/auth.service';
  */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NgTemplateOutlet],
   templateUrl: './shell.html',
   styleUrl: './shell.css',
 })
 export class Shell {
   protected readonly auth = inject(AuthService);
 
-  protected readonly secciones = [
+  private readonly todas: Seccion[] = [
     { ruta: '/inventario', nombre: 'Inventario', icono: 'inventario' },
     { ruta: '/movimientos', nombre: 'Movimiento', icono: 'movimiento' },
     { ruta: '/historial', nombre: 'Historial', icono: 'historial' },
+    { ruta: '/usuarios', nombre: 'Usuarios', icono: 'usuarios' },
   ];
+
+  /** Usuarios solo aparece para ADMIN; con clave temporal no hay navegacion. */
+  protected readonly secciones = computed<Seccion[]>(() =>
+    this.auth.debeCambiarClave() ? [] : this.todas.filter((s) => s.ruta !== '/usuarios' || this.auth.esAdmin()));
+
+  constructor() {
+    // Al abrir la aplicacion con una sesion guardada se confirma con la API que
+    // el token sigue valido; un 401 lo atiende el interceptor cerrando la sesion.
+    this.auth.validarSesion().subscribe({ error: () => undefined });
+  }
 
   salir() {
     this.auth.cerrarSesion();

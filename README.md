@@ -53,7 +53,7 @@ npm install
 npm start
 ```
 
-**Credenciales de prueba:** usuario `admin`, clave `admin123`.
+**Credenciales de prueba:** `admin` / `admin123` (rol ADMIN) y `operador` / `bodega123` (rol OPERADOR).
 
 ## Base de datos
 
@@ -62,7 +62,8 @@ npm start
 - `productos`: código único, nombre, unidad, stock mínimo y **cantidad** (con `CHECK (cantidad >= 0)` como última barrera).
 - `movimientos`: tipo (`ENTRADA` | `SALIDA`), cantidad, usuario, observación y **stock_resultante**, la foto del
   stock justo después del movimiento, como en una tarjeta de kárdex.
-- `usuarios`: nombre de usuario y clave en bcrypt.
+- `usuarios`: nombre de usuario, clave en bcrypt, rol (`ADMIN` | `OPERADOR`) y la marca `debe_cambiar_clave`
+  que obliga a cambiar una clave temporal en el siguiente ingreso.
 
 ### Procedimientos y funciones
 
@@ -73,6 +74,8 @@ npm start
 | `sp_crear_producto(...)` | PROCEDURE | Crea el producto; si trae cantidad inicial la registra como ENTRADA. |
 | `fn_inventario_actual(busqueda, solo_bajo)` | FUNCTION `RETURNS TABLE` | Inventario actual con estado `DISPONIBLE`, `BAJO` o `AGOTADO`. |
 | `fn_historial_movimientos(producto, tipo, limite, desplazamiento)` | FUNCTION `RETURNS TABLE` | Historial paginado con el total de filas (`COUNT(*) OVER ()`). |
+| `sp_crear_usuario(...)`, `sp_cambiar_estado_usuario(...)`, `sp_cambiar_clave(...)`, `sp_restablecer_clave(...)` | PROCEDURE | Gestión de usuarios (extra). Reciben el hash, nunca la clave en claro. |
+| `fn_usuarios()` | FUNCTION `RETURNS TABLE` | Usuarios con rol, estado y cuántos movimientos registraron. |
 
 **Por qué las lecturas son funciones y no procedimientos.** En PostgreSQL un `PROCEDURE` se invoca con
 `CALL` y no devuelve un conjunto de filas; para consultar datos se usa una función con `RETURNS TABLE`,
@@ -94,7 +97,9 @@ traduce por código en vez de leer el texto del mensaje:
 | `IN001` | Stock insuficiente | 409 Conflict (incluye `stock.disponible` y `stock.solicitado`) |
 | `IN002` | Producto no existe o está inactivo | 404 Not Found |
 | `IN003` | Cantidad o datos inválidos | 400 Bad Request |
-| `23505` | Código de producto repetido (UNIQUE) | 409 Conflict |
+| `IN004` | Usuario no existe o está inactivo | 404 Not Found |
+| `IN005` | Regla de usuarios: desactivarse a sí mismo, desactivar al último ADMIN, restablecer la clave propia | 409 Conflict |
+| `23505` | Código de producto o nombre de usuario repetido (UNIQUE) | 409 Conflict |
 
 ## API
 
@@ -110,6 +115,11 @@ botón *Authorize* para probarlas.
 | `POST /api/movimientos/entradas` | Registra una entrada (`sp_registrar_entrada`). Responde 201 con el stock resultante. |
 | `POST /api/movimientos/salidas` | Registra una salida (`sp_registrar_salida`). 409 si no hay stock. |
 | `GET /api/movimientos?productoId=&tipo=&pagina=&tamano=` | Historial paginado (`fn_historial_movimientos`). |
+| `GET /api/auth/sesion` | Datos del usuario del token leídos de la base; valida la sesión al abrir la aplicación. |
+| `POST /api/auth/cambiar-clave` | Cambia la clave propia (pide la actual) y devuelve un token nuevo. |
+| `GET /api/usuarios` · `POST /api/usuarios` | Solo ADMIN: lista y crea usuarios con clave temporal. |
+| `PATCH /api/usuarios/{id}/estado` | Solo ADMIN: activa o desactiva. |
+| `POST /api/usuarios/{id}/restablecer-clave` | Solo ADMIN: asigna una clave temporal a otro usuario. |
 | `GET /salud` | Comprueba la conexión con la base. |
 
 Decisiones del backend:
@@ -127,6 +137,25 @@ Decisiones del backend:
   Los secretos no van en `appsettings.json`: los de desarrollo están en `appsettings.Development.json`
   y en producción se inyectan por entorno.
 
+### Usuarios, roles y claves (extra)
+
+- **Dos roles.** `OPERADOR` registra movimientos y consulta; `ADMIN` además administra usuarios. El rol
+  viaja como claim de rol en el JWT y los endpoints de usuarios llevan `[Authorize(Roles = "ADMIN")]`;
+  un operador recibe 403.
+- **Alta por el administrador** con una clave temporal. El hash bcrypt se calcula en la API y es lo
+  único que llega al procedimiento `sp_crear_usuario`.
+- **Cambio de clave propio.** Pide la clave actual, exige mínimo 8 caracteres y devuelve un token nuevo.
+- **Clave temporal con cambio obligatorio.** Cuando un admin crea un usuario o le restablece la clave,
+  el token que recibe ese usuario lleva la claim `clave_pendiente`. La política de autorización por
+  defecto de la API rechaza con 403 cualquier petición que la traiga, salvo ver la sesión y cambiar la
+  clave; el frontend hace lo mismo con una guarda de ruta. Así se cubre el "olvidé mi clave" sin montar
+  correo: el admin asigna una temporal y el sistema obliga a reemplazarla.
+- **Reglas en la base.** Nadie puede desactivarse a sí mismo ni desactivar al último ADMIN activo
+  (`IN005`); el restablecimiento no sirve para la clave propia.
+- **Límite conocido.** Un token sigue siendo válido hasta su vencimiento aunque el usuario sea
+  desactivado después; la pantalla lo detecta al recargar porque `GET /api/auth/sesion` responde 401.
+  Para revocar al instante haría falta una lista de tokens revocados o vigencias más cortas con refresh.
+
 ### Pruebas
 
 ```bash
@@ -137,6 +166,8 @@ dotnet test
 - `ManejoErroresMiddlewareTests`: la traducción SQLSTATE → HTTP, sin servidor ni base.
 - `MovimientosApiTests`: la API completa en memoria con un repositorio falso: 401 sin token, 400 de
   validación, 404 de producto, 409 de stock, 409 de código repetido.
+- `UsuariosApiTests`: roles (403 al operador), clave temporal (403 salvo cambiarla), cambio y
+  restablecimiento de clave, alta con validaciones y nombre repetido.
 - `ProcedimientosPostgresTests`: contra PostgreSQL real (entrada, salida, IN001, IN002 y dos salidas
   concurrentes). Se omiten si no existe la variable `INVENTARIO_TEST_DB`:
 
@@ -150,6 +181,12 @@ Frontend: `npm test` corre las pruebas con Vitest.
 
 - **Login** con JWT guardado en `localStorage`; un interceptor agrega el token a cada petición y, si la
   API responde 401, cierra la sesión y vuelve al login conservando la ruta a la que se iba.
+- **Rutas protegidas.** Ninguna pantalla abre por URL sin sesión (guarda `authGuard`); al abrir la
+  aplicación se confirma el token contra la API. Con clave temporal solo se puede ir a "Cambiar clave"
+  y la sección Usuarios solo existe para ADMIN (guardas `claveVigenteGuard` y `adminGuard`). La API
+  repite esas comprobaciones: la guarda evita la pantalla, el 403 evita el dato.
+- **Usuarios** (ADMIN): lista con rol, estado y movimientos registrados; alta con clave temporal;
+  activar o desactivar; restablecer clave.
 - **Inventario**: resumen (productos, unidades, en bajo, agotados), búsqueda que resuelve la base de
   datos, filtro "solo bajo mínimo", barra de nivel frente al mínimo y alta de productos.
 - **Registrar movimiento**: entrada o salida, selector de producto con su stock, cantidad y observación.
@@ -161,5 +198,6 @@ Frontend: `npm test` corre las pruebas con Vitest.
 ## Capturas
 
 En [`docs/capturas`](docs/capturas): login, inventario, registro de una entrada, error de stock
-insuficiente, historial y vistas en móvil (inventario y movimiento). La interfaz sigue el tema del
+insuficiente, historial, vistas en móvil (inventario y movimiento), administración de usuarios y el
+cambio de clave obligatorio. La interfaz sigue el tema del
 sistema, por eso hay capturas en claro y en oscuro.

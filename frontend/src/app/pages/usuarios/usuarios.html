@@ -1,0 +1,115 @@
+<header class="cabecera-pagina">
+  <div>
+    <p class="rotulo">Administración</p>
+    <h1>Usuarios</h1>
+  </div>
+  <button type="button" class="boton principal" (click)="abrirAlta()">Nuevo usuario</button>
+</header>
+
+@if (mensaje(); as m) {
+  <div class="aviso exito aparece" role="status"><div><strong>Listo</strong><small>{{ m }}</small></div></div>
+}
+@if (error(); as e) {
+  <div class="aviso error aparece" role="alert"><div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div></div>
+}
+
+@if (mostrarAlta()) {
+  <form class="ficha alta aparece" (ngSubmit)="guardarUsuario()" novalidate>
+    <div class="ficha-cabecera">
+      <h2>Nuevo usuario</h2>
+      <button type="button" class="boton compacto plano" (click)="mostrarAlta.set(false)">Cancelar</button>
+    </div>
+    <div class="alta-campos">
+      <div class="campo">
+        <label for="nombreUsuario">Usuario</label>
+        <input id="nombreUsuario" name="nombreUsuario" class="entrada mono" [(ngModel)]="nuevo.nombreUsuario"
+               placeholder="jperez" maxlength="50" autocomplete="off" required />
+      </div>
+      <div class="campo">
+        <label for="nombreCompleto">Nombre completo</label>
+        <input id="nombreCompleto" name="nombreCompleto" class="entrada" [(ngModel)]="nuevo.nombreCompleto"
+               placeholder="Juan Pérez" maxlength="120" required />
+      </div>
+      <div class="campo">
+        <label for="rol">Rol</label>
+        <select id="rol" name="rol" class="entrada" [(ngModel)]="nuevo.rol">
+          <option value="OPERADOR">OPERADOR · registra movimientos y consulta</option>
+          <option value="ADMIN">ADMIN · además administra usuarios</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="claveTemporal">Clave temporal <span class="silencio">(mínimo 8)</span></label>
+        <input id="claveTemporal" name="claveTemporal" class="entrada" type="text" [(ngModel)]="nuevo.claveTemporal"
+               maxlength="100" autocomplete="off" required />
+      </div>
+    </div>
+    @if (errorAlta(); as e) {
+      <div class="aviso error alta-aviso" role="alert"><div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div></div>
+    }
+    <div class="alta-pie">
+      <span class="ayuda">La clave se guarda con bcrypt y el usuario deberá cambiarla en su primer ingreso.</span>
+      <button type="submit" class="boton principal"
+              [disabled]="guardando() || nuevo.nombreUsuario.length < 3 || nuevo.nombreCompleto.length < 3 || nuevo.claveTemporal.length < 8">
+        {{ guardando() ? 'Guardando…' : 'Crear usuario' }}
+      </button>
+    </div>
+  </form>
+}
+
+<section class="ficha">
+  <div class="tabla-marco">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th class="num oculto-movil">Movimientos</th>
+          <th class="oculto-movil">Creado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (u of usuarios(); track u.id) {
+          <tr [class.inactivo]="!u.activo">
+            <td class="mono">
+              {{ u.nombreUsuario }}
+              @if (u.nombreUsuario === auth.usuario()) { <small class="silencio"> (tú)</small> }
+            </td>
+            <td>{{ u.nombreCompleto }}</td>
+            <td><span class="rol" [class.admin]="u.rol === 'ADMIN'">{{ u.rol }}</span></td>
+            <td>
+              <span class="estado" [class]="'estado ' + (u.activo ? 'DISPONIBLE' : 'AGOTADO')">{{ u.activo ? 'Activo' : 'Inactivo' }}</span>
+              @if (u.debeCambiarClave) { <small class="silencio pendiente">clave temporal</small> }
+            </td>
+            <td class="num oculto-movil">{{ u.movimientos }}</td>
+            <td class="oculto-movil silencio pequeno">{{ u.creadoEn | date: 'dd/MM/yyyy' }}</td>
+            <td class="acciones">
+              @if (restableciendo() === u.id) {
+                <form class="restablecer" (ngSubmit)="restablecer(u)" novalidate>
+                  <input class="entrada" type="text" name="claveTemporal" [(ngModel)]="claveTemporal"
+                         placeholder="Clave temporal (mín. 8)" autocomplete="off" />
+                  <button type="submit" class="boton compacto principal" [disabled]="ocupado() === u.id">Asignar</button>
+                  <button type="button" class="boton compacto plano" (click)="cancelarRestablecer()">Cancelar</button>
+                  @if (errorRestablecer(); as e) { <span class="ayuda error">{{ e.detalle || e.titulo }}</span> }
+                </form>
+              } @else {
+                <div class="fila">
+                  <button type="button" class="boton compacto" (click)="abrirRestablecer(u)"
+                          [disabled]="ocupado() === u.id || u.nombreUsuario === auth.usuario()">Restablecer clave</button>
+                  <button type="button" class="boton compacto" [class.peligro]="u.activo" (click)="cambiarEstado(u)"
+                          [disabled]="ocupado() === u.id || u.nombreUsuario === auth.usuario()">
+                    {{ u.activo ? 'Desactivar' : 'Activar' }}
+                  </button>
+                </div>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="7" class="vacio">{{ cargando() ? 'Cargando usuarios…' : 'No hay usuarios.' }}</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

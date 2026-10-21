@@ -1,0 +1,43 @@
+.cabecera-pagina {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.aviso { margin-bottom: 20px; }
+
+.alta { margin-bottom: 20px; }
+.alta-campos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  padding: 18px;
+}
+.alta-aviso { margin: 0 18px; }
+.alta-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-top: 1px solid var(--linea);
+}
+
+.rol { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; color: var(--tinta-2); }
+.rol.admin { color: var(--acento); }
+.pendiente { display: block; font-size: 0.75rem; }
+tr.inactivo td { color: var(--tinta-3); }
+
+.acciones { white-space: nowrap; }
+.acciones .fila { flex-wrap: nowrap; }
+.restablecer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.restablecer .entrada { width: 200px; padding: 6px 10px; }
+
+@media (max-width: 720px) {
+  .alta-campos { grid-template-columns: 1fr; }
+  .acciones { white-space: normal; }
+}

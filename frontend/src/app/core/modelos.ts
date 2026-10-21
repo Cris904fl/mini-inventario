@@ -60,11 +60,43 @@ export interface Pagina<T> {
   totalPaginas: number;
 }
 
+export type Rol = 'ADMIN' | 'OPERADOR';
+
 export interface RespuestaLogin {
   token: string;
   expiraEn: string;
   usuario: string;
   nombreCompleto: string;
+  rol: Rol;
+  /** True cuando la clave es temporal: solo se permite cambiarla. */
+  debeCambiarClave: boolean;
+}
+
+export interface Sesion {
+  id: number;
+  usuario: string;
+  nombreCompleto: string;
+  rol: Rol;
+  activo: boolean;
+  debeCambiarClave: boolean;
+}
+
+export interface UsuarioEnLista {
+  id: number;
+  nombreUsuario: string;
+  nombreCompleto: string;
+  rol: Rol;
+  activo: boolean;
+  debeCambiarClave: boolean;
+  creadoEn: string;
+  movimientos: number;
+}
+
+export interface NuevoUsuario {
+  nombreUsuario: string;
+  nombreCompleto: string;
+  rol: Rol;
+  claveTemporal: string;
 }
 
 /** Cuerpo de error de la API (ProblemDetails, RFC 9457) mas las extensiones propias. */

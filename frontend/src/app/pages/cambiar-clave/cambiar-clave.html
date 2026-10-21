@@ -1,0 +1,58 @@
+<header class="cabecera-pagina">
+  <div>
+    <p class="rotulo">Sesión de {{ auth.usuario() }}</p>
+    <h1>Cambiar clave</h1>
+  </div>
+  @if (!auth.debeCambiarClave()) {
+    <a routerLink="/inventario" class="boton">Volver</a>
+  }
+</header>
+
+@if (auth.debeCambiarClave()) {
+  <div class="aviso alerta" role="status">
+    <div>
+      <strong>Tu clave es temporal</strong>
+      <small>Un administrador la asignó. Elige una clave propia para continuar; hasta entonces no hay acceso al inventario.</small>
+    </div>
+  </div>
+}
+
+<form class="ficha formulario" (ngSubmit)="cambiar()" novalidate>
+  <div class="campos">
+    <div class="campo">
+      <label for="actual">Clave actual</label>
+      <input id="actual" name="actual" class="entrada" type="password" autocomplete="current-password"
+             [ngModel]="claveActual()" (ngModelChange)="claveActual.set($event)" [disabled]="enviando() || listo()" />
+    </div>
+    <div class="campo">
+      <label for="nueva">Clave nueva <span class="silencio">(mínimo 8 caracteres)</span></label>
+      <input id="nueva" name="nueva" class="entrada" type="password" autocomplete="new-password"
+             [ngModel]="claveNueva()" (ngModelChange)="claveNueva.set($event)" [disabled]="enviando() || listo()" />
+    </div>
+    <div class="campo">
+      <label for="confirmacion">Repite la clave nueva</label>
+      <input id="confirmacion" name="confirmacion" class="entrada" type="password" autocomplete="new-password"
+             [ngModel]="confirmacion()" (ngModelChange)="confirmacion.set($event)" [disabled]="enviando() || listo()"
+             [class.invalida]="aviso() !== null && confirmacion() !== ''" />
+      @if (aviso(); as a) { <span class="ayuda error">{{ a }}</span> }
+    </div>
+  </div>
+
+  @if (error(); as e) {
+    <div class="aviso error aparece" role="alert">
+      <div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div>
+    </div>
+  }
+
+  @if (listo()) {
+    <div class="aviso exito aparece" role="status">
+      <div><strong>Clave cambiada</strong><small>Ya puedes usar la nueva clave. Entrando al inventario…</small></div>
+    </div>
+  }
+
+  <div class="pie">
+    <button type="submit" class="boton principal" [disabled]="!puedeEnviar() || listo()">
+      {{ enviando() ? 'Guardando…' : 'Guardar clave nueva' }}
+    </button>
+  </div>
+</form>
