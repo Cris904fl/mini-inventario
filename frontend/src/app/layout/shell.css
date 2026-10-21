@@ -59,8 +59,7 @@
   padding-top: 16px;
   border-top: 1px dashed var(--linea-fuerte);
 }
-.usuario .boton { margin-top: 8px; justify-self: start; }
-.tema-rotulo { margin-top: 12px; }
+.acciones-usuario { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
 
 .superior { display: none; }
 .inferior { display: none; }

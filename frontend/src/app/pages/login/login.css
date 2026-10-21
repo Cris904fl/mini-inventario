@@ -1,12 +1,11 @@
 .escena {
+  position: relative;
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  align-content: center;
-  gap: 16px;
   padding: 24px 16px;
 }
-.tema-pie { display: flex; justify-content: center; }
+.tema-esquina { position: absolute; top: 16px; right: 16px; }
 
 .tarjeta {
   width: 100%;

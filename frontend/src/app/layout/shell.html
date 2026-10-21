@@ -21,12 +21,19 @@
       <span class="rotulo">Sesión</span>
       <strong>{{ auth.nombreCompleto() || auth.usuario() }}</strong>
       <span class="pequeno silencio mono">&#64;{{ auth.usuario() }} · {{ auth.rol() }}</span>
-      <div class="fila">
-        <a routerLink="/cambiar-clave" class="boton compacto plano">Cambiar clave</a>
-        <button type="button" class="boton compacto" (click)="salir()">Cerrar sesión</button>
+      <div class="acciones-usuario">
+        <app-tema-selector />
+        <a routerLink="/cambiar-clave" class="boton-icono" aria-label="Cambiar clave" title="Cambiar clave">
+          <svg class="icono" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="7" cy="10" r="3.5" /><path d="M10.5 10H17m-2.5 0v2.5M13 10v2" />
+          </svg>
+        </a>
+        <button type="button" class="boton-icono" (click)="salir()" aria-label="Cerrar sesión" title="Cerrar sesión">
+          <svg class="icono" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M8 3.5H4.5v13H8M12.5 6.5 16 10l-3.5 3.5M16 10H7.5" />
+          </svg>
+        </button>
       </div>
-      <span class="rotulo tema-rotulo">Tema</span>
-      <app-tema-selector />
     </div>
   </aside>
 
@@ -36,7 +43,7 @@
       <strong>Kárdex</strong>
     </a>
     <div class="acciones-superior">
-      <app-tema-selector [compacto]="true" />
+      <app-tema-selector />
       <a routerLink="/cambiar-clave" class="boton-icono" aria-label="Cambiar clave" title="Cambiar clave">
         <svg class="icono" viewBox="0 0 20 20" aria-hidden="true">
           <circle cx="7" cy="10" r="3.5" /><path d="M10.5 10H17m-2.5 0v2.5M13 10v2" />

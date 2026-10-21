@@ -24,12 +24,6 @@ export class TemaService {
     return t;
   });
 
-  readonly opciones: { valor: Tema; nombre: string }[] = [
-    { valor: 'sistema', nombre: 'Sistema' },
-    { valor: 'claro', nombre: 'Claro' },
-    { valor: 'oscuro', nombre: 'Oscuro' },
-  ];
-
   constructor() {
     window.matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', (e) => this.sistemaOscuro.set(e.matches));
@@ -45,10 +39,6 @@ export class TemaService {
         /* sin almacenamiento: el tema dura la sesion */
       }
     });
-  }
-
-  elegir(t: Tema) {
-    this.tema.set(t);
   }
 
   /** Alterna entre claro y oscuro a partir del que se ve (para el boton sol/luna). */

@@ -194,8 +194,8 @@ Frontend: `npm test` corre las pruebas con Vitest.
   de la API se muestra tal cual con su código.
 - **Historial**: paginado, con filtros por tipo y producto, saldo tras cada movimiento y usuario.
 - **Responsive**: barra lateral en escritorio y pestañas inferiores en móvil.
-- **Tema** claro u oscuro: por defecto sigue al sistema operativo y se puede fijar desde el selector
-  (login, barra lateral o barra superior); la elección queda guardada en el navegador.
+- **Tema** claro u oscuro: por defecto sigue al sistema operativo; el botón sol/luna (login, barra
+  lateral y barra superior móvil) lo alterna y la elección queda guardada en el navegador.
 
 ## Capturas
 
