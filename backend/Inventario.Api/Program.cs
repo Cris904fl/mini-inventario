@@ -4,6 +4,7 @@ using Inventario.Api.Datos;
 using Inventario.Api.Middleware;
 using Inventario.Api.Seguridad;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
@@ -49,7 +50,17 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Clave))
         };
     });
-builder.Services.AddAuthorization();
+// Politicas:
+//  * la de por defecto ([Authorize] a secas, y tambien [Authorize(Roles=...)])
+//    exige estar autenticado Y no tener una clave temporal pendiente;
+//  * "Autenticado" solo exige el token: la usan ver la sesion y cambiar la
+//    clave, que es lo unico permitido mientras la clave sea temporal.
+builder.Services.AddAuthorizationBuilder()
+    .SetDefaultPolicy(new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .RequireAssertion(ctx => !ctx.User.HasClaim(c => c.Type == GeneradorTokens.ClaimClavePendiente))
+        .Build())
+    .AddPolicy(Politicas.Autenticado, p => p.RequireAuthenticatedUser());
 
 // --- API ---------------------------------------------------------------------
 builder.Services.AddControllers();

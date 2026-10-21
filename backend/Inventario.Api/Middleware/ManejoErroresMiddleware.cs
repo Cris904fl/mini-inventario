@@ -16,6 +16,8 @@ public class ManejoErroresMiddleware(RequestDelegate siguiente, ILogger<ManejoEr
     public const string StockInsuficiente = "IN001";
     public const string ProductoNoEncontrado = "IN002";
     public const string CantidadInvalida = "IN003";
+    public const string UsuarioNoEncontrado = "IN004";
+    public const string ReglaDeUsuarios = "IN005";
 
     public async Task InvokeAsync(HttpContext contexto)
     {
@@ -57,6 +59,8 @@ public class ManejoErroresMiddleware(RequestDelegate siguiente, ILogger<ManejoEr
             StockInsuficiente => Problema(StatusCodes.Status409Conflict, "Stock insuficiente", ex.MessageText),
             ProductoNoEncontrado => Problema(StatusCodes.Status404NotFound, "Producto no encontrado", ex.MessageText),
             CantidadInvalida => Problema(StatusCodes.Status400BadRequest, "Datos invalidos", ex.MessageText),
+            UsuarioNoEncontrado => Problema(StatusCodes.Status404NotFound, "Usuario no encontrado", ex.MessageText),
+            ReglaDeUsuarios => Problema(StatusCodes.Status409Conflict, "Operacion no permitida", ex.MessageText),
             PostgresErrorCodes.UniqueViolation => Problema(StatusCodes.Status409Conflict, "Registro duplicado",
                 "Ya existe un registro con ese valor unico (por ejemplo, el codigo del producto)."),
             PostgresErrorCodes.CheckViolation => Problema(StatusCodes.Status400BadRequest, "Datos invalidos",

@@ -10,4 +10,14 @@ public static class ClaimsExtensiones
         => usuario.FindFirstValue(JwtRegisteredClaimNames.UniqueName)
            ?? usuario.FindFirstValue(ClaimTypes.Name)
            ?? throw new InvalidOperationException("El token no trae el nombre de usuario.");
+
+    /// <summary>Id del usuario (claim sub).</summary>
+    public static int UsuarioId(this ClaimsPrincipal usuario)
+    {
+        var sub = usuario.FindFirstValue(JwtRegisteredClaimNames.Sub)
+                  ?? usuario.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(sub, out var id)
+            ? id
+            : throw new InvalidOperationException("El token no trae el id de usuario.");
+    }
 }

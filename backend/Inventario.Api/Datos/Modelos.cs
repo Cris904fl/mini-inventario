@@ -48,5 +48,29 @@ public record Usuario
     public string NombreUsuario { get; init; } = string.Empty;
     public string NombreCompleto { get; init; } = string.Empty;
     public string ClaveHash { get; init; } = string.Empty;
+    /// <summary>ADMIN u OPERADOR.</summary>
+    public string Rol { get; init; } = Roles.Operador;
     public bool Activo { get; init; }
+    /// <summary>True cuando la clave es temporal y hay que cambiarla antes de seguir.</summary>
+    public bool DebeCambiarClave { get; init; }
+}
+
+/// <summary>Fila de <c>fn_usuarios</c> (sin el hash).</summary>
+public record UsuarioEnLista
+{
+    public int Id { get; init; }
+    public string NombreUsuario { get; init; } = string.Empty;
+    public string NombreCompleto { get; init; } = string.Empty;
+    public string Rol { get; init; } = Roles.Operador;
+    public bool Activo { get; init; }
+    public bool DebeCambiarClave { get; init; }
+    public DateTime CreadoEn { get; init; }
+    public long Movimientos { get; init; }
+}
+
+public static class Roles
+{
+    public const string Admin = "ADMIN";
+    public const string Operador = "OPERADOR";
+    public static readonly string[] Todos = [Admin, Operador];
 }

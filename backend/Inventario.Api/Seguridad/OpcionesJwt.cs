@@ -1,5 +1,12 @@
 namespace Inventario.Api.Seguridad;
 
+/// <summary>Nombres de las politicas de autorizacion (ver Program.cs).</summary>
+public static class Politicas
+{
+    /// <summary>Solo exige token valido, aunque la clave sea temporal.</summary>
+    public const string Autenticado = "Autenticado";
+}
+
 /// <summary>Valores de la seccion <c>Jwt</c> de la configuracion.</summary>
 public class OpcionesJwt
 {

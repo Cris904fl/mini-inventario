@@ -10,7 +10,24 @@ public record SolicitudLogin(
     [Required, StringLength(50)] string Usuario,
     [Required, StringLength(100)] string Clave);
 
-public record RespuestaLogin(string Token, DateTimeOffset ExpiraEn, string Usuario, string NombreCompleto);
+public record RespuestaLogin(string Token, DateTimeOffset ExpiraEn, string Usuario, string NombreCompleto, string Rol, bool DebeCambiarClave);
+
+public record RespuestaSesion(int Id, string Usuario, string NombreCompleto, string Rol, bool Activo, bool DebeCambiarClave);
+
+public record SolicitudCambioClave(
+    [Required] string ClaveActual,
+    [Required, StringLength(100, MinimumLength = 8, ErrorMessage = "La clave nueva debe tener entre 8 y 100 caracteres.")] string ClaveNueva);
+
+public record SolicitudUsuario(
+    [Required, StringLength(50, MinimumLength = 3), RegularExpression("^[a-zA-Z0-9._-]+$", ErrorMessage = "El usuario solo admite letras, numeros, punto, guion y guion bajo.")] string NombreUsuario,
+    [Required, StringLength(120, MinimumLength = 3)] string NombreCompleto,
+    [Required, RegularExpression("^(ADMIN|OPERADOR)$", ErrorMessage = "El rol debe ser ADMIN u OPERADOR.")] string Rol,
+    [Required, StringLength(100, MinimumLength = 8, ErrorMessage = "La clave temporal debe tener entre 8 y 100 caracteres.")] string ClaveTemporal);
+
+public record SolicitudEstadoUsuario(bool Activo);
+
+public record SolicitudRestablecerClave(
+    [Required, StringLength(100, MinimumLength = 8, ErrorMessage = "La clave temporal debe tener entre 8 y 100 caracteres.")] string ClaveTemporal);
 
 public record SolicitudMovimiento(
     [Range(1, int.MaxValue, ErrorMessage = "Selecciona un producto.")] int ProductoId,
