@@ -178,6 +178,22 @@ textarea.entrada { resize: vertical; min-height: 72px; }
 .boton.plano { border-color: transparent; background: transparent; }
 .boton.plano:hover { background: var(--papel-3); }
 
+/* Boton cuadrado solo con icono (barra superior en movil). */
+.boton-icono {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--linea-fuerte);
+  border-radius: var(--radio);
+  background: var(--papel);
+  color: var(--tinta);
+  cursor: pointer;
+  text-decoration: none;
+}
+.boton-icono:hover { background: var(--papel-3); }
+.boton-icono .icono { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
 /* --- Avisos -------------------------------------------------------------- */
 
 .aviso {
