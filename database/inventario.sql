@@ -23,6 +23,11 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- crypt() / gen_salt() para la clave del usuario semilla
 
 -- Permite volver a ejecutar el script sobre una base ya creada.
+DROP FUNCTION  IF EXISTS fn_usuarios();
+DROP PROCEDURE IF EXISTS sp_restablecer_clave(INT, TEXT, INT);
+DROP PROCEDURE IF EXISTS sp_cambiar_clave(INT, TEXT);
+DROP PROCEDURE IF EXISTS sp_cambiar_estado_usuario(INT, BOOLEAN, INT);
+DROP PROCEDURE IF EXISTS sp_crear_usuario(VARCHAR, VARCHAR, TEXT, VARCHAR, BOOLEAN, INT);
 DROP FUNCTION  IF EXISTS fn_historial_movimientos(INT, VARCHAR, INT, INT);
 DROP FUNCTION  IF EXISTS fn_inventario_actual(TEXT, BOOLEAN);
 DROP PROCEDURE IF EXISTS sp_crear_producto(VARCHAR, VARCHAR, TEXT, VARCHAR, INT, INT, VARCHAR, INT);
@@ -37,13 +42,19 @@ DROP TABLE IF EXISTS usuarios;
 -- -----------------------------------------------------------------------------
 
 CREATE TABLE usuarios (
-    id              SERIAL PRIMARY KEY,
-    nombre_usuario  VARCHAR(50)  NOT NULL UNIQUE,
-    nombre_completo VARCHAR(120) NOT NULL,
-    clave_hash      TEXT         NOT NULL,          -- bcrypt; nunca la clave en claro
-    activo          BOOLEAN      NOT NULL DEFAULT TRUE,
-    creado_en       TIMESTAMPTZ  NOT NULL DEFAULT now()
+    id                 SERIAL PRIMARY KEY,
+    nombre_usuario     VARCHAR(50)  NOT NULL UNIQUE,
+    nombre_completo    VARCHAR(120) NOT NULL,
+    clave_hash         TEXT         NOT NULL,       -- bcrypt; nunca la clave en claro
+    rol                VARCHAR(20)  NOT NULL DEFAULT 'OPERADOR' CHECK (rol IN ('ADMIN', 'OPERADOR')),
+    activo             BOOLEAN      NOT NULL DEFAULT TRUE,
+    debe_cambiar_clave BOOLEAN      NOT NULL DEFAULT FALSE,  -- clave temporal: se obliga a cambiarla al ingresar
+    creado_en          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    actualizado_en     TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
+
+COMMENT ON COLUMN usuarios.rol IS
+    'ADMIN administra usuarios; OPERADOR solo registra movimientos y consulta.';
 
 CREATE TABLE productos (
     id             SERIAL PRIMARY KEY,
@@ -219,6 +230,142 @@ END;
 $$;
 
 -- -----------------------------------------------------------------------------
+-- Usuarios (extra): alta, estado y claves. La clave llega ya en hash desde la
+-- API; la base nunca ve la clave en claro. Codigos: IN004 usuario no existe,
+-- IN005 regla de usuarios (no desactivarse a si mismo ni al ultimo ADMIN).
+-- -----------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE sp_crear_usuario(
+    IN    p_nombre_usuario     VARCHAR(50),
+    IN    p_nombre_completo    VARCHAR(120),
+    IN    p_clave_hash         TEXT,
+    IN    p_rol                VARCHAR(20) DEFAULT 'OPERADOR',
+    IN    p_debe_cambiar_clave BOOLEAN     DEFAULT TRUE,   -- la clave inicial es temporal
+    INOUT p_usuario_id         INT         DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_nombre_usuario IS NULL OR TRIM(p_nombre_usuario) = ''
+       OR p_nombre_completo IS NULL OR TRIM(p_nombre_completo) = ''
+       OR p_clave_hash IS NULL OR p_clave_hash = '' THEN
+        RAISE EXCEPTION 'El usuario, el nombre completo y la clave son obligatorios'
+            USING ERRCODE = 'IN003';
+    END IF;
+
+    INSERT INTO usuarios (nombre_usuario, nombre_completo, clave_hash, rol, debe_cambiar_clave)
+    VALUES (LOWER(TRIM(p_nombre_usuario)), TRIM(p_nombre_completo), p_clave_hash,
+            COALESCE(UPPER(p_rol), 'OPERADOR'), COALESCE(p_debe_cambiar_clave, TRUE))
+    RETURNING id INTO p_usuario_id;
+    -- Nombre repetido: lo rechaza UNIQUE (23505); rol invalido: lo rechaza el CHECK (23514).
+END;
+$$;
+
+CREATE OR REPLACE PROCEDURE sp_cambiar_estado_usuario(
+    IN p_usuario_id  INT,
+    IN p_activo      BOOLEAN,
+    IN p_solicitante INT           -- quien hace el cambio; no puede desactivarse a si mismo
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_rol VARCHAR(20);
+BEGIN
+    SELECT rol INTO v_rol FROM usuarios WHERE id = p_usuario_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El usuario % no existe', p_usuario_id USING ERRCODE = 'IN004';
+    END IF;
+
+    IF NOT p_activo THEN
+        IF p_usuario_id = p_solicitante THEN
+            RAISE EXCEPTION 'No puedes desactivar tu propio usuario' USING ERRCODE = 'IN005';
+        END IF;
+        -- Siempre debe quedar al menos un ADMIN activo para no perder la administracion.
+        IF v_rol = 'ADMIN' AND (SELECT COUNT(*) FROM usuarios WHERE rol = 'ADMIN' AND activo AND id <> p_usuario_id) = 0 THEN
+            RAISE EXCEPTION 'No se puede desactivar al unico administrador activo' USING ERRCODE = 'IN005';
+        END IF;
+    END IF;
+
+    UPDATE usuarios
+    SET activo = p_activo, actualizado_en = now()
+    WHERE id = p_usuario_id;
+END;
+$$;
+
+-- Cambio de clave por el propio usuario (la API ya verifico la clave actual).
+CREATE OR REPLACE PROCEDURE sp_cambiar_clave(
+    IN p_usuario_id INT,
+    IN p_clave_hash TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_clave_hash IS NULL OR p_clave_hash = '' THEN
+        RAISE EXCEPTION 'La clave es obligatoria' USING ERRCODE = 'IN003';
+    END IF;
+
+    UPDATE usuarios
+    SET clave_hash = p_clave_hash,
+        debe_cambiar_clave = FALSE,
+        actualizado_en = now()
+    WHERE id = p_usuario_id AND activo;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El usuario % no existe o esta inactivo', p_usuario_id USING ERRCODE = 'IN004';
+    END IF;
+END;
+$$;
+
+-- Restablecimiento por un ADMIN: asigna una clave temporal y obliga a cambiarla.
+CREATE OR REPLACE PROCEDURE sp_restablecer_clave(
+    IN p_usuario_id  INT,
+    IN p_clave_hash  TEXT,
+    IN p_solicitante INT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_clave_hash IS NULL OR p_clave_hash = '' THEN
+        RAISE EXCEPTION 'La clave temporal es obligatoria' USING ERRCODE = 'IN003';
+    END IF;
+
+    IF p_usuario_id = p_solicitante THEN
+        RAISE EXCEPTION 'Para tu propia clave usa el cambio de clave' USING ERRCODE = 'IN005';
+    END IF;
+
+    UPDATE usuarios
+    SET clave_hash = p_clave_hash,
+        debe_cambiar_clave = TRUE,
+        actualizado_en = now()
+    WHERE id = p_usuario_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El usuario % no existe', p_usuario_id USING ERRCODE = 'IN004';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_usuarios()
+RETURNS TABLE (
+    id                 INT,
+    nombre_usuario     VARCHAR(50),
+    nombre_completo    VARCHAR(120),
+    rol                VARCHAR(20),
+    activo             BOOLEAN,
+    debe_cambiar_clave BOOLEAN,
+    creado_en          TIMESTAMPTZ,
+    movimientos        BIGINT          -- cuantos movimientos ha registrado
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT u.id, u.nombre_usuario, u.nombre_completo, u.rol, u.activo, u.debe_cambiar_clave, u.creado_en,
+           (SELECT COUNT(*) FROM movimientos m WHERE m.usuario = u.nombre_usuario) AS movimientos
+    FROM usuarios u
+    ORDER BY u.activo DESC, u.rol, u.nombre_usuario;
+$$;
+
+-- -----------------------------------------------------------------------------
 -- Funciones de consulta (estado actual del inventario e historial)
 -- -----------------------------------------------------------------------------
 
@@ -308,10 +455,11 @@ $$;
 -- Datos iniciales
 -- -----------------------------------------------------------------------------
 
--- Usuario de la aplicacion: admin / admin123 (bcrypt generado por pgcrypto;
--- la API lo verifica con BCrypt.Net).
-INSERT INTO usuarios (nombre_usuario, nombre_completo, clave_hash)
-VALUES ('admin', 'Administrador de bodega', crypt('admin123', gen_salt('bf', 10)));
+-- Usuarios de la aplicacion (bcrypt generado por pgcrypto; la API lo verifica
+-- con BCrypt.Net): admin / admin123 (ADMIN) y operador / bodega123 (OPERADOR).
+INSERT INTO usuarios (nombre_usuario, nombre_completo, clave_hash, rol)
+VALUES ('admin',    'Administrador de bodega', crypt('admin123',  gen_salt('bf', 10)), 'ADMIN'),
+       ('operador', 'Operador de turno',       crypt('bodega123', gen_salt('bf', 10)), 'OPERADOR');
 
 -- Los productos entran por los mismos procedimientos que usa la API, de modo
 -- que el historial cuadra con el stock desde el primer dia.
