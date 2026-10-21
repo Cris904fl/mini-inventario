@@ -1,0 +1,18 @@
+# Base de datos para desarrollo y evaluacion de la prueba.
+# El script database/inventario.sql se ejecuta solo la primera vez que se crea el volumen.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mini_inventario_db
+    environment:
+      POSTGRES_DB: mini_inventario
+      POSTGRES_USER: inventario
+      POSTGRES_PASSWORD: inventario123
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./database/inventario.sql:/docker-entrypoint-initdb.d/01-inventario.sql:ro
+      - mini_inventario_data:/var/lib/postgresql/data
+
+volumes:
+  mini_inventario_data:

@@ -1,0 +1,19 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Angular / Node
+node_modules/
+.angular/
+dist/
+npm-debug.log*
+
+# Secretos y ambiente local
+*.local.json
+.env
+
+# Sistema
+.DS_Store
+Thumbs.db
