@@ -23,6 +23,9 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- crypt() / gen_salt() para la clave del usuario semilla
 
 -- Permite volver a ejecutar el script sobre una base ya creada.
+DROP FUNCTION  IF EXISTS fn_productos_mas_movidos(INT, INT, TEXT);
+DROP FUNCTION  IF EXISTS fn_movimientos_por_dia(INT, TEXT);
+DROP FUNCTION  IF EXISTS fn_resumen_inventario(INT, TEXT);
 DROP FUNCTION  IF EXISTS fn_usuarios();
 DROP PROCEDURE IF EXISTS sp_restablecer_clave(INT, TEXT, INT);
 DROP PROCEDURE IF EXISTS sp_cambiar_clave(INT, TEXT);
@@ -452,6 +455,102 @@ AS $$
 $$;
 
 -- -----------------------------------------------------------------------------
+-- Tablero (extra): cifras del periodo, movimientos por dia y productos que mas
+-- rotan. Las fechas se agrupan en la zona horaria que pida la API (por defecto
+-- Bogota) para que un movimiento de las 8 pm no caiga en el dia siguiente por
+-- estar el servidor en UTC.
+-- -----------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION fn_resumen_inventario(
+    p_dias INT  DEFAULT 7,
+    p_zona TEXT DEFAULT 'America/Bogota'
+)
+RETURNS TABLE (
+    productos           BIGINT,
+    unidades            BIGINT,
+    en_bajo             BIGINT,
+    agotados            BIGINT,
+    entradas_periodo    BIGINT,   -- unidades que entraron en el periodo
+    salidas_periodo     BIGINT,   -- unidades que salieron
+    movimientos_periodo BIGINT    -- cantidad de movimientos registrados
+)
+LANGUAGE sql
+STABLE
+AS $$
+    WITH periodo AS (
+        SELECT ((now() AT TIME ZONE p_zona)::date - (GREATEST(COALESCE(p_dias, 7), 1) - 1)) AS desde
+    )
+    SELECT (SELECT COUNT(*)                                           FROM productos WHERE activo),
+           (SELECT COALESCE(SUM(cantidad), 0)                         FROM productos WHERE activo),
+           (SELECT COUNT(*) FROM productos WHERE activo AND cantidad > 0 AND cantidad <= stock_minimo),
+           (SELECT COUNT(*) FROM productos WHERE activo AND cantidad = 0),
+           (SELECT COALESCE(SUM(cantidad), 0) FROM movimientos, periodo
+             WHERE tipo = 'ENTRADA' AND (fecha AT TIME ZONE p_zona)::date >= periodo.desde),
+           (SELECT COALESCE(SUM(cantidad), 0) FROM movimientos, periodo
+             WHERE tipo = 'SALIDA'  AND (fecha AT TIME ZONE p_zona)::date >= periodo.desde),
+           (SELECT COUNT(*) FROM movimientos, periodo
+             WHERE (fecha AT TIME ZONE p_zona)::date >= periodo.desde);
+$$;
+
+CREATE OR REPLACE FUNCTION fn_movimientos_por_dia(
+    p_dias INT  DEFAULT 7,
+    p_zona TEXT DEFAULT 'America/Bogota'
+)
+RETURNS TABLE (
+    dia      DATE,
+    entradas BIGINT,
+    salidas  BIGINT
+)
+LANGUAGE sql
+STABLE
+AS $$
+    -- generate_series garantiza una fila por dia aunque no haya movimientos,
+    -- para que el grafico no se salte dias.
+    WITH dias AS (
+        SELECT d::date AS dia
+        FROM generate_series(
+            (now() AT TIME ZONE p_zona)::date - (GREATEST(COALESCE(p_dias, 7), 1) - 1),
+            (now() AT TIME ZONE p_zona)::date,
+            interval '1 day') AS d
+    )
+    SELECT dias.dia,
+           COALESCE(SUM(m.cantidad) FILTER (WHERE m.tipo = 'ENTRADA'), 0) AS entradas,
+           COALESCE(SUM(m.cantidad) FILTER (WHERE m.tipo = 'SALIDA'),  0) AS salidas
+    FROM dias
+    LEFT JOIN movimientos m ON (m.fecha AT TIME ZONE p_zona)::date = dias.dia
+    GROUP BY dias.dia
+    ORDER BY dias.dia;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_productos_mas_movidos(
+    p_dias   INT  DEFAULT 7,
+    p_limite INT  DEFAULT 5,
+    p_zona   TEXT DEFAULT 'America/Bogota'
+)
+RETURNS TABLE (
+    producto_id INT,
+    codigo      VARCHAR(20),
+    nombre      VARCHAR(120),
+    unidad      VARCHAR(20),
+    salidas     BIGINT,
+    entradas    BIGINT
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT p.id, p.codigo, p.nombre, p.unidad,
+           COALESCE(SUM(m.cantidad) FILTER (WHERE m.tipo = 'SALIDA'),  0) AS salidas,
+           COALESCE(SUM(m.cantidad) FILTER (WHERE m.tipo = 'ENTRADA'), 0) AS entradas
+    FROM movimientos m
+    JOIN productos p ON p.id = m.producto_id
+    WHERE (m.fecha AT TIME ZONE p_zona)::date >=
+          (now() AT TIME ZONE p_zona)::date - (GREATEST(COALESCE(p_dias, 7), 1) - 1)
+    GROUP BY p.id, p.codigo, p.nombre, p.unidad
+    ORDER BY salidas DESC, entradas DESC, p.nombre
+    LIMIT GREATEST(COALESCE(p_limite, 5), 1);
+$$;
+
+-- -----------------------------------------------------------------------------
 -- Datos iniciales
 -- -----------------------------------------------------------------------------
 
@@ -480,5 +579,13 @@ CALL sp_registrar_entrada(3,  12, 'admin', 'Compra orden OC-2026-018');
 CALL sp_registrar_salida (3,   6, 'admin', 'Consumo bodega 2');
 CALL sp_registrar_salida (8,  40, 'admin', 'Sellado de contenedores semana 42');
 CALL sp_registrar_salida (6,   3, 'admin', NULL);
+
+-- Solo para los datos de ejemplo: se reparten en los ultimos dias para que el
+-- tablero y el historial muestren algo de historia. La API siempre registra con now().
+UPDATE movimientos
+SET fecha = fecha - CASE
+    WHEN id <= 8 THEN interval '9 days'          -- inventario inicial
+    ELSE make_interval(days => 15 - id::int)     -- ids 9..14: hace 6..1 dias
+END;
 
 COMMIT;
