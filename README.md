@@ -76,6 +76,7 @@ npm start
 | `fn_historial_movimientos(producto, tipo, limite, desplazamiento)` | FUNCTION `RETURNS TABLE` | Historial paginado con el total de filas (`COUNT(*) OVER ()`). |
 | `sp_crear_usuario(...)`, `sp_cambiar_estado_usuario(...)`, `sp_cambiar_clave(...)`, `sp_restablecer_clave(...)` | PROCEDURE | Gestión de usuarios (extra). Reciben el hash, nunca la clave en claro. |
 | `fn_usuarios()` | FUNCTION `RETURNS TABLE` | Usuarios con rol, estado y cuántos movimientos registraron. |
+| `fn_resumen_inventario(dias, zona)`, `fn_movimientos_por_dia(dias, zona)`, `fn_productos_mas_movidos(dias, limite, zona)` | FUNCTION `RETURNS TABLE` | Datos del tablero (extra): cifras del período, serie diaria sin huecos (`generate_series`) y productos que más rotan, agrupando por día en la zona horaria del cliente. |
 
 **Por qué las lecturas son funciones y no procedimientos.** En PostgreSQL un `PROCEDURE` se invoca con
 `CALL` y no devuelve un conjunto de filas; para consultar datos se usa una función con `RETURNS TABLE`,
@@ -120,6 +121,7 @@ botón *Authorize* para probarlas.
 | `GET /api/usuarios` · `POST /api/usuarios` | Solo ADMIN: lista y crea usuarios con clave temporal. |
 | `PATCH /api/usuarios/{id}/estado` | Solo ADMIN: activa o desactiva. |
 | `POST /api/usuarios/{id}/restablecer-clave` | Solo ADMIN: asigna una clave temporal a otro usuario. |
+| `GET /api/resumen?dias=&zona=` | Tablero: cifras, movimientos por día, más movidos, bajo mínimo y últimos movimientos en una sola respuesta. |
 | `GET /salud` | Comprueba la conexión con la base. |
 
 Decisiones del backend:
@@ -168,6 +170,7 @@ dotnet test
   validación, 404 de producto, 409 de stock, 409 de código repetido.
 - `UsuariosApiTests`: roles (403 al operador), clave temporal (403 salvo cambiarla), cambio y
   restablecimiento de clave, alta con validaciones y nombre repetido.
+- `ResumenApiTests`: forma de la respuesta del tablero y acotación del período.
 - `ProcedimientosPostgresTests`: contra PostgreSQL real (entrada, salida, IN001, IN002 y dos salidas
   concurrentes). Se omiten si no existe la variable `INVENTARIO_TEST_DB`:
 
@@ -181,6 +184,10 @@ Frontend: `npm test` corre las pruebas con Vitest.
 
 - **Login** con JWT guardado en `localStorage`; un interceptor agrega el token a cada petición y, si la
   API responde 401, cierra la sesión y vuelve al login conservando la ruta a la que se iba.
+- **Resumen** (pantalla de inicio): cifras del inventario y del período, gráfico de entradas y salidas por
+  día dibujado en SVG sin librerías, productos que más rotan, lista de bajo mínimo con acceso directo a
+  reponer y últimos movimientos; período de 7 o 30 días. Los días se agrupan en la zona horaria del
+  navegador, que viaja a la función de la base.
 - **Rutas protegidas.** Ninguna pantalla abre por URL sin sesión (guarda `authGuard`); al abrir la
   aplicación se confirma el token contra la API. Con clave temporal solo se puede ir a "Cambiar clave"
   y la sección Usuarios solo existe para ADMIN (guardas `claveVigenteGuard` y `adminGuard`). La API
@@ -199,7 +206,7 @@ Frontend: `npm test` corre las pruebas con Vitest.
 
 ## Capturas
 
-En [`docs/capturas`](docs/capturas): login, inventario, registro de una entrada, error de stock
-insuficiente, historial, vistas en móvil (inventario y movimiento), administración de usuarios y el
-cambio de clave obligatorio. La interfaz sigue el tema del
+En [`docs/capturas`](docs/capturas): tablero de resumen, login, inventario, registro de una entrada,
+error de stock insuficiente, historial, vistas en móvil (inventario y movimiento), administración de
+usuarios y el cambio de clave obligatorio. La interfaz sigue el tema del
 sistema, por eso hay capturas en claro y en oscuro.

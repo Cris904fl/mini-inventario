@@ -38,7 +38,7 @@ export class LoginPage {
           return;
         }
         const volverA = this.ruta.snapshot.queryParamMap.get('volverA');
-        this.router.navigateByUrl(volverA && volverA.startsWith('/') ? volverA : '/inventario');
+        this.router.navigateByUrl(volverA && volverA.startsWith('/') ? volverA : '/resumen');
       },
       error: (e: unknown) => {
         const mensaje = describirError(e);

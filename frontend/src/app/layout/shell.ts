@@ -7,7 +7,7 @@ import { TemaSelector } from './tema-selector';
 interface Seccion {
   ruta: string;
   nombre: string;
-  icono: 'inventario' | 'movimiento' | 'historial' | 'usuarios';
+  icono: 'resumen' | 'inventario' | 'movimiento' | 'historial' | 'usuarios';
 }
 
 /**
@@ -24,6 +24,7 @@ export class Shell {
   protected readonly auth = inject(AuthService);
 
   private readonly todas: Seccion[] = [
+    { ruta: '/resumen', nombre: 'Resumen', icono: 'resumen' },
     { ruta: '/inventario', nombre: 'Inventario', icono: 'inventario' },
     { ruta: '/movimientos', nombre: 'Movimiento', icono: 'movimiento' },
     { ruta: '/historial', nombre: 'Historial', icono: 'historial' },

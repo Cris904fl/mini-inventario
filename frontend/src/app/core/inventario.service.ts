@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 import {
-  Movimiento, NuevoProducto, Pagina, Producto, RespuestaMovimiento, SolicitudMovimiento, TipoMovimiento,
+  Movimiento, NuevoProducto, Pagina, Producto, RespuestaMovimiento, Resumen, SolicitudMovimiento, TipoMovimiento,
 } from './modelos';
 
 export interface FiltroHistorial {
@@ -34,6 +34,13 @@ export class InventarioService {
 
   registrarSalida(solicitud: SolicitudMovimiento) {
     return this.http.post<RespuestaMovimiento>(`${this.api}/movimientos/salidas`, solicitud);
+  }
+
+  /** Datos del tablero; la zona horaria es la del navegador. */
+  resumen(dias = 7) {
+    const zona = Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Bogota';
+    const params = new HttpParams().set('dias', dias).set('zona', zona);
+    return this.http.get<Resumen>(`${this.api}/resumen`, { params });
   }
 
   historial(filtro: FiltroHistorial = {}) {

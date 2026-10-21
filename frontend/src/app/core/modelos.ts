@@ -108,3 +108,21 @@ export interface Problema {
   stock?: { disponible: number; solicitado: number };
   errors?: Record<string, string[]>;
 }
+
+export interface Resumen {
+  dias: number;
+  zona: string;
+  totales: {
+    productos: number;
+    unidades: number;
+    enBajo: number;
+    agotados: number;
+    entradasPeriodo: number;
+    salidasPeriodo: number;
+    movimientosPeriodo: number;
+  };
+  porDia: { dia: string; entradas: number; salidas: number }[];
+  masMovidos: { productoId: number; codigo: string; nombre: string; unidad: string; salidas: number; entradas: number }[];
+  bajoMinimo: Producto[];
+  ultimos: Movimiento[];
+}

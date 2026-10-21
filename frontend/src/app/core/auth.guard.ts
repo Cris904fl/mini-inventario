@@ -25,5 +25,5 @@ export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  return auth.esAdmin() ? true : router.createUrlTree(['/inventario']);
+  return auth.esAdmin() ? true : router.createUrlTree(['/resumen']);
 };

@@ -1,0 +1,149 @@
+<header class="cabecera-pagina">
+  <div>
+    <p class="rotulo">Tablero</p>
+    <h1>Resumen</h1>
+  </div>
+  <div class="fila">
+    <div class="periodo" role="group" aria-label="Período">
+      @for (p of periodos; track p) {
+        <button type="button" class="chip" [class.activo]="dias() === p" (click)="elegirPeriodo(p)">{{ p }} días</button>
+      }
+    </div>
+    <a routerLink="/movimientos" class="boton principal">Registrar movimiento</a>
+  </div>
+</header>
+
+@if (error(); as e) {
+  <div class="aviso error" role="alert"><div><strong>{{ e.titulo }}</strong><small>{{ e.detalle }}</small></div></div>
+}
+
+@if (datos(); as r) {
+  <section class="cifras">
+    <a routerLink="/inventario" class="dato">
+      <span class="rotulo">Productos</span>
+      <strong class="mono">{{ r.totales.productos }}</strong>
+    </a>
+    <div class="dato">
+      <span class="rotulo">Unidades en bodega</span>
+      <strong class="mono">{{ r.totales.unidades | number }}</strong>
+    </div>
+    <div class="dato" [class.atencion]="r.totales.enBajo > 0">
+      <span class="rotulo">Stock bajo</span>
+      <strong class="mono">{{ r.totales.enBajo }}</strong>
+    </div>
+    <div class="dato" [class.critico]="r.totales.agotados > 0">
+      <span class="rotulo">Agotados</span>
+      <strong class="mono">{{ r.totales.agotados }}</strong>
+    </div>
+    <div class="dato de-entrada">
+      <span class="rotulo">Entradas · {{ r.dias }} días</span>
+      <strong class="mono">+{{ r.totales.entradasPeriodo | number }}</strong>
+    </div>
+    <div class="dato de-salida">
+      <span class="rotulo">Salidas · {{ r.dias }} días</span>
+      <strong class="mono">−{{ r.totales.salidasPeriodo | number }}</strong>
+    </div>
+  </section>
+
+  <section class="ficha grafico">
+    <div class="ficha-cabecera">
+      <h2>Movimientos por día</h2>
+      <span class="leyenda">
+        <span class="muestra de-entrada"></span> Entradas
+        <span class="muestra de-salida"></span> Salidas
+        <span class="silencio pequeno oculto-movil">· {{ r.totales.movimientosPeriodo }} movimientos</span>
+      </span>
+    </div>
+    <div class="grafico-marco">
+      <svg [attr.viewBox]="'0 0 ' + ancho + ' ' + alto" preserveAspectRatio="none" class="barras" role="img"
+           [attr.aria-label]="'Entradas y salidas por día en los últimos ' + r.dias + ' días'">
+        <line [attr.x1]="0" [attr.x2]="ancho" [attr.y1]="lineaBase" [attr.y2]="lineaBase" class="eje" />
+        @for (b of barras(); track b.etiqueta) {
+          <g>
+            <title>{{ b.etiqueta }}: +{{ b.entradas }} / −{{ b.salidas }}</title>
+            <rect class="barra de-entrada"
+                  [attr.x]="b.x + (ancho / barras().length) / 2 - anchoBarra() - 1"
+                  [attr.y]="lineaBase - altoVisible(b.altoEntradas, b.entradas)"
+                  [attr.width]="anchoBarra()" [attr.height]="altoVisible(b.altoEntradas, b.entradas)" />
+            <rect class="barra de-salida"
+                  [attr.x]="b.x + (ancho / barras().length) / 2 + 1"
+                  [attr.y]="lineaBase - altoVisible(b.altoSalidas, b.salidas)"
+                  [attr.width]="anchoBarra()" [attr.height]="altoVisible(b.altoSalidas, b.salidas)" />
+            @if (b.mostrarEtiqueta) {
+              <text class="etiqueta" [attr.x]="b.x + (ancho / barras().length) / 2" [attr.y]="alto - 6" text-anchor="middle">{{ b.etiqueta }}</text>
+            }
+          </g>
+        }
+      </svg>
+      <span class="max mono silencio">máx. {{ maximo() }}</span>
+    </div>
+  </section>
+
+  <div class="dos-columnas">
+    <section class="ficha">
+      <div class="ficha-cabecera"><h2>Lo que más rota</h2><span class="silencio pequeno">{{ r.dias }} días</span></div>
+      <ul class="lista">
+        @for (p of r.masMovidos; track p.productoId) {
+          <li>
+            <div class="lista-texto">
+              <span class="mono">{{ p.codigo }}</span>
+              <span>{{ p.nombre }}</span>
+            </div>
+            <div class="rotacion">
+              <span class="rotacion-barra">
+                <span class="tramo de-salida" [style.width.%]="porcentaje(p.salidas)"></span>
+                <span class="tramo de-entrada" [style.width.%]="porcentaje(p.entradas)"></span>
+              </span>
+              <span class="mono pequeno"><span class="tipo SALIDA">−{{ p.salidas }}</span> <span class="tipo ENTRADA">+{{ p.entradas }}</span></span>
+            </div>
+          </li>
+        } @empty {
+          <li class="vacio silencio">Sin movimientos en el período.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="ficha">
+      <div class="ficha-cabecera"><h2>Bajo mínimo</h2><a routerLink="/inventario" class="pequeno">Ver inventario</a></div>
+      <ul class="lista">
+        @for (p of r.bajoMinimo; track p.id) {
+          <li>
+            <div class="lista-texto">
+              <span class="mono">{{ p.codigo }}</span>
+              <span>{{ p.nombre }}</span>
+              <small><span class="estado" [class]="'estado ' + p.estado">{{ p.cantidad }} de mín. {{ p.stockMinimo }} {{ p.unidad }}</span></small>
+            </div>
+            <a class="boton compacto" [routerLink]="['/movimientos']" [queryParams]="{ tipo: 'ENTRADA', productoId: p.id }">Reponer</a>
+          </li>
+        } @empty {
+          <li class="vacio silencio">Ningún producto bajo mínimo.</li>
+        }
+      </ul>
+    </section>
+  </div>
+
+  <section class="ficha">
+    <div class="ficha-cabecera"><h2>Últimos movimientos</h2><a routerLink="/historial" class="pequeno">Ver historial</a></div>
+    <div class="tabla-marco">
+      <table class="tabla">
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th><th class="num oculto-movil">Saldo</th><th class="oculto-movil">Usuario</th></tr></thead>
+        <tbody>
+          @for (m of r.ultimos; track m.id) {
+            <tr>
+              <td class="pequeno mono">{{ m.fecha | date: 'dd/MM HH:mm' }}</td>
+              <td><div class="producto"><span>{{ m.producto }}</span><small class="silencio mono">{{ m.codigo }}</small></div></td>
+              <td><span class="tipo" [class]="'tipo ' + m.tipo">{{ m.tipo }}</span></td>
+              <td class="num" [class]="'num ' + m.tipo">{{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}</td>
+              <td class="num oculto-movil">{{ m.stockResultante }}</td>
+              <td class="oculto-movil mono pequeno">{{ m.usuario }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="6" class="vacio">Todavía no hay movimientos.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+} @else if (cargando()) {
+  <p class="silencio">Cargando el tablero…</p>
+}

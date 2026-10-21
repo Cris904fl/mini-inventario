@@ -7,6 +7,7 @@ import { MovimientosPage } from './pages/movimientos/movimientos';
 import { HistorialPage } from './pages/historial/historial';
 import { UsuariosPage } from './pages/usuarios/usuarios';
 import { CambiarClavePage } from './pages/cambiar-clave/cambiar-clave';
+import { ResumenPage } from './pages/resumen/resumen';
 
 export const routes: Routes = [
   { path: 'login', component: LoginPage, title: 'Ingresar · Kárdex' },
@@ -15,7 +16,8 @@ export const routes: Routes = [
     component: Shell,
     canActivate: [authGuard],          // sin sesion, ninguna de estas rutas abre
     children: [
-      { path: '', redirectTo: 'inventario', pathMatch: 'full' },
+      { path: '', redirectTo: 'resumen', pathMatch: 'full' },
+      { path: 'resumen', component: ResumenPage, canActivate: [claveVigenteGuard], title: 'Resumen · Kárdex' },
       { path: 'cambiar-clave', component: CambiarClavePage, title: 'Cambiar clave · Kárdex' },
       { path: 'inventario', component: InventarioPage, canActivate: [claveVigenteGuard], title: 'Inventario · Kárdex' },
       { path: 'movimientos', component: MovimientosPage, canActivate: [claveVigenteGuard], title: 'Registrar movimiento · Kárdex' },
@@ -23,5 +25,5 @@ export const routes: Routes = [
       { path: 'usuarios', component: UsuariosPage, canActivate: [claveVigenteGuard, adminGuard], title: 'Usuarios · Kárdex' },
     ],
   },
-  { path: '**', redirectTo: 'inventario' },
+  { path: '**', redirectTo: 'resumen' },
 ];

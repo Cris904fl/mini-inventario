@@ -43,7 +43,7 @@ export class CambiarClavePage {
       next: () => {
         this.listo.set(true);
         this.enviando.set(false);
-        setTimeout(() => this.router.navigateByUrl('/inventario'), 900);
+        setTimeout(() => this.router.navigateByUrl('/resumen'), 900);
       },
       error: (e: unknown) => {
         this.error.set(describirError(e));
