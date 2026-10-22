@@ -60,8 +60,9 @@ npm start
 ### Tablas
 
 - `productos`: código único, nombre, unidad, stock mínimo y **cantidad** (con `CHECK (cantidad >= 0)` como última barrera).
-- `movimientos`: tipo (`ENTRADA` | `SALIDA`), cantidad, usuario, observación y **stock_resultante**, la foto del
-  stock justo después del movimiento, como en una tarjeta de kárdex.
+- `movimientos`: tipo (`ENTRADA` | `SALIDA` | `AJUSTE`), cantidad, usuario, observación y **stock_resultante**, la
+  foto del stock justo después del movimiento, como en una tarjeta de kárdex. En un ajuste, `cantidad` guarda la
+  diferencia con signo entre lo contado y lo que había.
 - `usuarios`: nombre de usuario, clave en bcrypt, rol (`ADMIN` | `OPERADOR`) y la marca `debe_cambiar_clave`
   que obliga a cambiar una clave temporal en el siguiente ingreso.
 
@@ -71,6 +72,7 @@ npm start
 | --- | --- | --- |
 | `sp_registrar_entrada(producto, cantidad, usuario, observacion, INOUT id, INOUT stock)` | PROCEDURE | Suma al stock e inserta el movimiento. |
 | `sp_registrar_salida(...)` | PROCEDURE | Valida que haya stock suficiente; si no, `RAISE EXCEPTION` con SQLSTATE `IN001`. Descuenta e inserta el movimiento. |
+| `sp_registrar_ajuste(producto, cantidad_contada, usuario, motivo, INOUT id, INOUT diferencia, INOUT stock)` | PROCEDURE | Ajuste por conteo físico: calcula la diferencia contra el stock registrado, exige motivo y rechaza un conteo igual al stock (`IN003`). |
 | `sp_crear_producto(...)` | PROCEDURE | Crea el producto; si trae cantidad inicial la registra como ENTRADA. |
 | `fn_inventario_actual(busqueda, solo_bajo)` | FUNCTION `RETURNS TABLE` | Inventario actual con estado `DISPONIBLE`, `BAJO` o `AGOTADO`. |
 | `fn_historial_movimientos(producto, tipo, limite, desplazamiento)` | FUNCTION `RETURNS TABLE` | Historial paginado con el total de filas (`COUNT(*) OVER ()`). |
@@ -115,7 +117,8 @@ botón *Authorize* para probarlas.
 | `POST /api/productos` | Crea un producto (`sp_crear_producto`). Responde 201. |
 | `POST /api/movimientos/entradas` | Registra una entrada (`sp_registrar_entrada`). Responde 201 con el stock resultante. |
 | `POST /api/movimientos/salidas` | Registra una salida (`sp_registrar_salida`). 409 si no hay stock. |
-| `GET /api/movimientos?productoId=&tipo=&pagina=&tamano=` | Historial paginado (`fn_historial_movimientos`). |
+| `POST /api/movimientos/ajustes` | Solo ADMIN: ajuste por conteo físico (`sp_registrar_ajuste`). Responde la diferencia calculada y el stock resultante. |
+| `GET /api/movimientos?productoId=&tipo=&pagina=&tamano=` | Historial paginado (`fn_historial_movimientos`); `tipo` admite ENTRADA, SALIDA o AJUSTE y cada fila trae la diferencia con signo. |
 | `GET /api/auth/sesion` | Datos del usuario del token leídos de la base; valida la sesión al abrir la aplicación. |
 | `POST /api/auth/cambiar-clave` | Cambia la clave propia (pide la actual) y devuelve un token nuevo. |
 | `GET /api/usuarios` · `POST /api/usuarios` | Solo ADMIN: lista y crea usuarios con clave temporal. |
@@ -171,6 +174,7 @@ dotnet test
 - `UsuariosApiTests`: roles (403 al operador), clave temporal (403 salvo cambiarla), cambio y
   restablecimiento de clave, alta con validaciones y nombre repetido.
 - `ResumenApiTests`: forma de la respuesta del tablero y acotación del período.
+- `AjustesApiTests`: 403 al operador, 400 por datos o por conteo igual al stock, diferencia calculada.
 - `ProcedimientosPostgresTests`: contra PostgreSQL real (entrada, salida, IN001, IN002 y dos salidas
   concurrentes). Se omiten si no existe la variable `INVENTARIO_TEST_DB`:
 
@@ -199,6 +203,9 @@ Frontend: `npm test` corre las pruebas con Vitest.
 - **Registrar movimiento**: entrada o salida, selector de producto con su stock, cantidad y observación.
   Muestra el stock que quedaría como orientación, pero la regla la aplica la base: si no alcanza, el 409
   de la API se muestra tal cual con su código.
+- **Ajuste de inventario** (solo ADMIN): tercer segmento del mismo formulario. Se escribe lo contado en
+  bodega y el motivo; la ficha anticipa la diferencia y la base la confirma. Sirve para mermas, roturas y
+  errores de registro sin disfrazarlos de entrada o salida.
 - **Historial**: paginado, con filtros por tipo y producto, saldo tras cada movimiento y usuario.
 - **Responsive**: barra lateral en escritorio y pestañas inferiores en móvil.
 - **Tema** claro u oscuro: por defecto sigue al sistema operativo; el botón sol/luna (login, barra
@@ -217,6 +224,10 @@ Inventario actual con el estado de cada producto y su nivel frente al mínimo:
 Salida rechazada por la base de datos: el 409 llega con el mensaje del procedimiento y el código IN001:
 
 ![Error de stock insuficiente](docs/capturas/04-error-stock-insuficiente.jpg)
+
+Ajuste por conteo físico (solo ADMIN): la ficha anticipa la diferencia antes de enviar:
+
+![Ajuste de inventario](docs/capturas/10-ajuste-inventario.jpg)
 
 Vista en móvil del inventario y del registro de movimiento:
 
