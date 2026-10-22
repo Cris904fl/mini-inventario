@@ -53,7 +53,7 @@ npm install
 npm start
 ```
 
-**Credenciales de prueba:** `admin` / `admin123` (rol ADMIN) y `operador` / `bodega123` (rol OPERADOR).
+**Credenciales de prueba:** `admin` / `admin123` (rol ADMIN) y `operador` / `Operador123` (rol OPERADOR).
 
 ## Base de datos
 

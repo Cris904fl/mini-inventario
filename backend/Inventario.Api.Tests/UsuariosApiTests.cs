@@ -28,7 +28,7 @@ public class UsuariosApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Un_operador_no_puede_administrar_usuarios()
     {
-        var cliente = await _api.ClienteAutenticadoAsync("operador", "bodega123");
+        var cliente = await _api.ClienteAutenticadoAsync("operador", "Operador123");
 
         var respuesta = await cliente.GetAsync("/api/usuarios");
 
@@ -38,7 +38,7 @@ public class UsuariosApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Un_operador_si_puede_registrar_movimientos()
     {
-        var cliente = await _api.ClienteAutenticadoAsync("operador", "bodega123");
+        var cliente = await _api.ClienteAutenticadoAsync("operador", "Operador123");
 
         var respuesta = await cliente.PostAsJsonAsync("/api/movimientos/entradas", new { productoId = 1, cantidad = 1 });
 
@@ -77,7 +77,7 @@ public class UsuariosApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Cambiar_la_clave_con_la_actual_incorrecta_responde_400_y_no_cambia_nada()
     {
-        var cliente = await _api.ClienteAutenticadoAsync("operador", "bodega123");
+        var cliente = await _api.ClienteAutenticadoAsync("operador", "Operador123");
 
         var cambio = await cliente.PostAsJsonAsync("/api/auth/cambiar-clave", new { claveActual = "mala", claveNueva = "definitiva456" });
 

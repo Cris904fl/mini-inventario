@@ -620,10 +620,10 @@ $$;
 -- -----------------------------------------------------------------------------
 
 -- Usuarios de la aplicacion (bcrypt generado por pgcrypto; la API lo verifica
--- con BCrypt.Net): admin / admin123 (ADMIN) y operador / bodega123 (OPERADOR).
+-- con BCrypt.Net): admin / admin123 (ADMIN) y operador / Operador123 (OPERADOR).
 INSERT INTO usuarios (nombre_usuario, nombre_completo, clave_hash, rol)
 VALUES ('admin',    'Administrador de bodega', crypt('admin123',  gen_salt('bf', 10)), 'ADMIN'),
-       ('operador', 'Operador de turno',       crypt('bodega123', gen_salt('bf', 10)), 'OPERADOR');
+       ('operador', 'Operador de turno',       crypt('Operador123', gen_salt('bf', 10)), 'OPERADOR');
 
 -- Los productos entran por los mismos procedimientos que usa la API, de modo
 -- que el historial cuadra con el stock desde el primer dia.

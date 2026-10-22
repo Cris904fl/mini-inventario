@@ -31,7 +31,7 @@ public class AjustesApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Un_operador_no_puede_ajustar_inventario()
     {
-        var cliente = await _api.ClienteAutenticadoAsync("operador", "bodega123");
+        var cliente = await _api.ClienteAutenticadoAsync("operador", "Operador123");
 
         var respuesta = await cliente.PostAsJsonAsync("/api/movimientos/ajustes",
             new { productoId = 1, cantidadContada = 7, motivo = "Conteo fisico" });

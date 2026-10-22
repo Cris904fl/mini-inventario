@@ -44,7 +44,7 @@ public class ApiFactory : WebApplicationFactory<Program>
 }
 
 /// <summary>
-/// Usuarios en memoria: admin/admin123 (ADMIN), operador/bodega123 (OPERADOR) y
+/// Usuarios en memoria: admin/admin123 (ADMIN), operador/Operador123 (OPERADOR) y
 /// temporal/temporal123 (OPERADOR con clave temporal pendiente de cambio).
 /// </summary>
 public class UsuariosFalsos : IUsuarioRepositorio
@@ -54,7 +54,7 @@ public class UsuariosFalsos : IUsuarioRepositorio
         new() { Id = 1, NombreUsuario = "admin", NombreCompleto = "Administrador", Rol = Roles.Admin, Activo = true,
                 ClaveHash = BCrypt.Net.BCrypt.HashPassword("admin123") },
         new() { Id = 2, NombreUsuario = "operador", NombreCompleto = "Operador", Rol = Roles.Operador, Activo = true,
-                ClaveHash = BCrypt.Net.BCrypt.HashPassword("bodega123") },
+                ClaveHash = BCrypt.Net.BCrypt.HashPassword("Operador123") },
         new() { Id = 3, NombreUsuario = "temporal", NombreCompleto = "Con clave temporal", Rol = Roles.Operador, Activo = true,
                 DebeCambiarClave = true, ClaveHash = BCrypt.Net.BCrypt.HashPassword("temporal123") },
         // Usuarios reservados para las pruebas que cambian claves (el fixture es compartido).
