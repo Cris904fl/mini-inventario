@@ -12,6 +12,7 @@
       <button type="button" class="chip" [class.activo]="tipo() === null" (click)="filtrarTipo(null)">Todos</button>
       <button type="button" class="chip" [class.activo]="tipo() === 'ENTRADA'" (click)="filtrarTipo('ENTRADA')">Entradas</button>
       <button type="button" class="chip" [class.activo]="tipo() === 'SALIDA'" (click)="filtrarTipo('SALIDA')">Salidas</button>
+      <button type="button" class="chip" [class.activo]="tipo() === 'AJUSTE'" (click)="filtrarTipo('AJUSTE')">Ajustes</button>
     </div>
     <select class="entrada selector" aria-label="Producto" [ngModel]="productoId()" (ngModelChange)="filtrarProducto($event)">
       <option [ngValue]="null">Todos los productos</option>
@@ -56,7 +57,7 @@
               </div>
             </td>
             <td><span class="tipo" [class]="'tipo ' + m.tipo">{{ m.tipo }}</span></td>
-            <td class="num" [class]="'num signo ' + m.tipo">{{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}</td>
+            <td class="num" [class]="'num signo ' + m.tipo">{{ m.diferencia > 0 ? '+' : '−' }}{{ m.diferencia < 0 ? -m.diferencia : m.diferencia }}</td>
             <td class="num oculto-movil">{{ m.stockResultante }}</td>
             <td class="oculto-movil mono pequeno">{{ m.usuario }}</td>
             <td class="oculto-movil silencio pequeno">{{ m.observacion || '—' }}</td>

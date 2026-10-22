@@ -133,7 +133,7 @@
               <td class="pequeno mono">{{ m.fecha | date: 'dd/MM HH:mm' }}</td>
               <td><div class="producto"><span>{{ m.producto }}</span><small class="silencio mono">{{ m.codigo }}</small></div></td>
               <td><span class="tipo" [class]="'tipo ' + m.tipo">{{ m.tipo }}</span></td>
-              <td class="num" [class]="'num ' + m.tipo">{{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}</td>
+              <td class="num" [class]="'num ' + m.tipo">{{ m.diferencia > 0 ? '+' : '−' }}{{ m.diferencia < 0 ? -m.diferencia : m.diferencia }}</td>
               <td class="num oculto-movil">{{ m.stockResultante }}</td>
               <td class="oculto-movil mono pequeno">{{ m.usuario }}</td>
             </tr>

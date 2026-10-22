@@ -35,6 +35,8 @@
 .segmento.activo { background: var(--papel-2); color: var(--tinta); }
 .segmento.entrada.activo { border-bottom-color: var(--acento); }
 .segmento.salida.activo { border-bottom-color: var(--salida); }
+.segmento.ajuste.activo { border-bottom-color: var(--bajo); }
+.segmentos.tres { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .segmento:not(.activo) .tipo { color: var(--tinta-3); }
 
 .campos { display: grid; gap: 16px; padding: 20px 18px; }
@@ -49,6 +51,7 @@
   border-top: 1px solid var(--linea);
 }
 .boton.principal.salida { background: var(--salida); border-color: var(--salida); color: #fff; }
+.boton.principal.ajuste { background: var(--bajo); border-color: var(--bajo); color: #fff; }
 
 .tarjeta-producto .cuerpo { display: grid; gap: 12px; padding: 18px; }
 .tarjeta-producto .vacio { min-height: 160px; place-items: center; text-align: center; }
@@ -63,6 +66,7 @@
 .cifras dd { margin: 0; font-size: 1.25rem; font-weight: 500; }
 .cifras dd small { font-size: 0.75rem; color: var(--tinta-2); }
 .cifras .negativo dd { color: var(--salida); }
+.cifras .positivo dd { color: var(--acento); }
 
 @media (max-width: 860px) {
   .dos-columnas { grid-template-columns: 1fr; }

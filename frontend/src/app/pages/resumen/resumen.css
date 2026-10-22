@@ -54,6 +54,7 @@
 .producto small { font-size: 0.75rem; }
 .num.ENTRADA { color: var(--acento); }
 .num.SALIDA { color: var(--salida); }
+.num.AJUSTE { color: var(--bajo); }
 
 @media (max-width: 1100px) {
   .cifras { grid-template-columns: repeat(3, minmax(0, 1fr)); }

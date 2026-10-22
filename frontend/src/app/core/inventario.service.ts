@@ -2,7 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 import {
-  Movimiento, NuevoProducto, Pagina, Producto, RespuestaMovimiento, Resumen, SolicitudMovimiento, TipoMovimiento,
+  Movimiento, NuevoProducto, Pagina, Producto, RespuestaAjuste, RespuestaMovimiento, Resumen, SolicitudAjuste,
+  SolicitudMovimiento, TipoMovimiento,
 } from './modelos';
 
 export interface FiltroHistorial {
@@ -34,6 +35,11 @@ export class InventarioService {
 
   registrarSalida(solicitud: SolicitudMovimiento) {
     return this.http.post<RespuestaMovimiento>(`${this.api}/movimientos/salidas`, solicitud);
+  }
+
+  /** Ajuste por conteo fisico; solo ADMIN. */
+  registrarAjuste(solicitud: SolicitudAjuste) {
+    return this.http.post<RespuestaAjuste>(`${this.api}/movimientos/ajustes`, solicitud);
   }
 
   /** Datos del tablero; la zona horaria es la del navegador. */

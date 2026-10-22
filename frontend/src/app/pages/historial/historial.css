@@ -27,6 +27,7 @@
 .signo { font-weight: 500; }
 .signo.ENTRADA { color: var(--acento); }
 .signo.SALIDA { color: var(--salida); }
+.signo.AJUSTE { color: var(--bajo); }
 
 .paginacion {
   display: flex;

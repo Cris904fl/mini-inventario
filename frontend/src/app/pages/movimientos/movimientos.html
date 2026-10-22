@@ -8,7 +8,7 @@
 
 <div class="dos-columnas">
   <form class="ficha formulario" (ngSubmit)="registrar()" novalidate>
-    <div class="segmentos" role="radiogroup" aria-label="Tipo de movimiento">
+    <div class="segmentos" role="radiogroup" aria-label="Tipo de movimiento" [class.tres]="auth.esAdmin()">
       <button type="button" class="segmento entrada" [class.activo]="tipo() === 'ENTRADA'"
               role="radio" [attr.aria-checked]="tipo() === 'ENTRADA'" (click)="elegirTipo('ENTRADA')">
         <span class="tipo ENTRADA">ENTRADA</span>
@@ -19,6 +19,13 @@
         <span class="tipo SALIDA">SALIDA</span>
         <small>Retira mercancía de bodega</small>
       </button>
+      @if (auth.esAdmin()) {
+        <button type="button" class="segmento ajuste" [class.activo]="tipo() === 'AJUSTE'"
+                role="radio" [attr.aria-checked]="tipo() === 'AJUSTE'" (click)="elegirTipo('AJUSTE')">
+          <span class="tipo AJUSTE">AJUSTE</span>
+          <small>Corrige por conteo físico</small>
+        </button>
+      }
     </div>
 
     <div class="campos">
@@ -34,19 +41,26 @@
       </div>
 
       <div class="campo">
-        <label for="cantidad">Cantidad</label>
-        <input id="cantidad" name="cantidad" class="entrada num" type="number" inputmode="numeric" min="1" step="1"
+        <label for="cantidad">{{ esAjuste() ? 'Cantidad contada en bodega' : 'Cantidad' }}</label>
+        <input id="cantidad" name="cantidad" class="entrada num" type="number" inputmode="numeric" [min]="esAjuste() ? 0 : 1" step="1"
                [ngModel]="cantidad()" (ngModelChange)="cantidad.set($event)" placeholder="0"
                [class.invalida]="excede()" required />
         @if (excede()) {
           <span class="ayuda error">Supera el stock disponible; la API lo rechazará.</span>
         }
+        @if (esAjuste() && diferenciaPrevista() === 0) {
+          <span class="ayuda">El conteo coincide con el stock registrado; no hay nada que ajustar.</span>
+        }
       </div>
 
       <div class="campo">
-        <label for="observacion">Observación <span class="silencio">(opcional)</span></label>
+        <label for="observacion">
+          @if (esAjuste()) { Motivo del ajuste <span class="silencio">(obligatorio, mínimo 5 caracteres)</span> }
+          @else { Observación <span class="silencio">(opcional)</span> }
+        </label>
         <textarea id="observacion" name="observacion" class="entrada" rows="2" maxlength="300"
-                  [(ngModel)]="observacion" placeholder="Orden de compra, despacho, destino…"></textarea>
+                  [ngModel]="observacion()" (ngModelChange)="observacion.set($event)"
+                  [placeholder]="esAjuste() ? 'Conteo físico: cajas rotas, merma, error de registro…' : 'Orden de compra, despacho, destino…'"></textarea>
       </div>
     </div>
 
@@ -63,15 +77,20 @@
     @if (resultado(); as r) {
       <div class="aviso exito aparece" role="status">
         <div>
-          <strong>{{ r.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }} registrada</strong>
-          <small>Movimiento <span class="mono">#{{ r.movimientoId }}</span> · {{ r.cantidad }} unidades · stock resultante <span class="mono">{{ r.stockResultante }}</span></small>
+          <strong>{{ r.tipo === 'ENTRADA' ? 'Entrada registrada' : (r.tipo === 'SALIDA' ? 'Salida registrada' : 'Ajuste registrado') }}</strong>
+          <small>
+            Movimiento <span class="mono">#{{ r.movimientoId }}</span> ·
+            @if (r.tipo === 'AJUSTE') { diferencia <span class="mono">{{ signo(r.cantidad) }}</span> }
+            @else { {{ r.cantidad }} unidades }
+            · stock resultante <span class="mono">{{ r.stockResultante }}</span>
+          </small>
         </div>
       </div>
     }
 
     <div class="pie">
-      <button type="submit" class="boton principal" [class.salida]="tipo() === 'SALIDA'" [disabled]="!listo()">
-        {{ enviando() ? 'Registrando…' : (tipo() === 'ENTRADA' ? 'Registrar entrada' : 'Registrar salida') }}
+      <button type="submit" class="boton principal" [class.salida]="tipo() === 'SALIDA'" [class.ajuste]="esAjuste()" [disabled]="!listo()">
+        {{ enviando() ? 'Registrando…' : (tipo() === 'ENTRADA' ? 'Registrar entrada' : (tipo() === 'SALIDA' ? 'Registrar salida' : 'Registrar ajuste')) }}
       </button>
     </div>
   </form>
@@ -91,10 +110,17 @@
             <dt class="rotulo">En bodega</dt>
             <dd class="mono">{{ p.cantidad }} <small>{{ p.unidad }}</small></dd>
           </div>
-          <div>
-            <dt class="rotulo">Mínimo</dt>
-            <dd class="mono">{{ p.stockMinimo }}</dd>
-          </div>
+          @if (esAjuste()) {
+            <div [class.negativo]="(diferenciaPrevista() ?? 0) < 0" [class.positivo]="(diferenciaPrevista() ?? 0) > 0">
+              <dt class="rotulo">Diferencia</dt>
+              <dd class="mono">{{ diferenciaPrevista() !== null ? signo(diferenciaPrevista()!) : '—' }}</dd>
+            </div>
+          } @else {
+            <div>
+              <dt class="rotulo">Mínimo</dt>
+              <dd class="mono">{{ p.stockMinimo }}</dd>
+            </div>
+          }
           <div [class.negativo]="excede()">
             <dt class="rotulo">Quedaría</dt>
             <dd class="mono">{{ stockPrevisto() ?? '—' }}</dd>

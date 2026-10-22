@@ -1,7 +1,7 @@
 // Contratos que devuelve la API (ver backend/Inventario.Api/Contratos).
 
 export type Estado = 'DISPONIBLE' | 'BAJO' | 'AGOTADO';
-export type TipoMovimiento = 'ENTRADA' | 'SALIDA';
+export type TipoMovimiento = 'ENTRADA' | 'SALIDA' | 'AJUSTE';
 
 export interface Producto {
   id: number;
@@ -39,6 +39,22 @@ export interface RespuestaMovimiento {
   usuario: string;
 }
 
+export interface SolicitudAjuste {
+  productoId: number;
+  cantidadContada: number;
+  motivo: string;
+}
+
+export interface RespuestaAjuste {
+  movimientoId: number;
+  productoId: number;
+  cantidadContada: number;
+  /** Contado menos stock anterior; la calcula la base. */
+  diferencia: number;
+  stockResultante: number;
+  usuario: string;
+}
+
 export interface Movimiento {
   id: number;
   fecha: string;
@@ -47,6 +63,8 @@ export interface Movimiento {
   producto: string;
   tipo: TipoMovimiento;
   cantidad: number;
+  /** Efecto con signo sobre el stock: +entrada, -salida, ajuste tal cual. */
+  diferencia: number;
   stockResultante: number;
   usuario: string;
   observacion: string | null;

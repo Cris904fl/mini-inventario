@@ -231,6 +231,7 @@ textarea.entrada { resize: vertical; min-height: 72px; }
 .tipo { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; }
 .tipo.ENTRADA { color: var(--acento); }
 .tipo.SALIDA { color: var(--salida); }
+.tipo.AJUSTE { color: var(--bajo); }
 
 /* --- Tablas -------------------------------------------------------------- */
 
