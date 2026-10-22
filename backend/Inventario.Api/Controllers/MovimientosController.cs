@@ -47,9 +47,26 @@ public class MovimientosController(IInventarioRepositorio inventario) : Controll
             new RespuestaMovimiento(resultado.MovimientoId, solicitud.ProductoId, "SALIDA", solicitud.Cantidad, resultado.StockResultante, usuario));
     }
 
+    /// <summary>Registra un AJUSTE por conteo fisico (solo ADMIN): se informa lo contado y la base calcula la diferencia.</summary>
+    /// <response code="201">Ajuste registrado; devuelve la diferencia y el stock resultante.</response>
+    /// <response code="400">Conteo negativo, sin motivo o igual al stock registrado.</response>
+    /// <response code="403">El usuario no es ADMIN.</response>
+    [HttpPost("ajustes")]
+    [Authorize(Roles = Roles.Admin)]
+    [ProducesResponseType(typeof(RespuestaAjuste), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RespuestaAjuste>> Ajuste([FromBody] SolicitudAjuste solicitud, CancellationToken ct)
+    {
+        var usuario = User.NombreUsuario();
+        var r = await inventario.RegistrarAjusteAsync(solicitud.ProductoId, solicitud.CantidadContada, usuario, solicitud.Motivo.Trim(), ct);
+        return Created($"/api/movimientos/{r.MovimientoId}",
+            new RespuestaAjuste(r.MovimientoId, solicitud.ProductoId, solicitud.CantidadContada, r.Diferencia, r.StockResultante, usuario));
+    }
+
     /// <summary>Historial de movimientos, del mas reciente al mas antiguo, paginado.</summary>
     /// <param name="productoId">Solo los movimientos de este producto.</param>
-    /// <param name="tipo">ENTRADA o SALIDA.</param>
+    /// <param name="tipo">ENTRADA, SALIDA o AJUSTE.</param>
     /// <param name="pagina">Numero de pagina, desde 1.</param>
     /// <param name="tamano">Elementos por pagina (1 a 100).</param>
     [HttpGet]
@@ -58,9 +75,9 @@ public class MovimientosController(IInventarioRepositorio inventario) : Controll
         [FromQuery] int? productoId, [FromQuery] string? tipo,
         [FromQuery] int pagina = 1, [FromQuery] int tamano = 20, CancellationToken ct = default)
     {
-        if (tipo is not null && tipo.ToUpperInvariant() is not ("ENTRADA" or "SALIDA"))
+        if (tipo is not null && tipo.ToUpperInvariant() is not ("ENTRADA" or "SALIDA" or "AJUSTE"))
             return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Filtro invalido",
-                detail: "El tipo debe ser ENTRADA o SALIDA.");
+                detail: "El tipo debe ser ENTRADA, SALIDA o AJUSTE.");
 
         pagina = Math.Max(pagina, 1);
         tamano = Math.Clamp(tamano, 1, TamanoMaximo);
@@ -70,7 +87,7 @@ public class MovimientosController(IInventarioRepositorio inventario) : Controll
 
         return Ok(new PaginaDeMovimientos(
             filas.Select(f => new MovimientoResumen(f.Id, f.Fecha, f.ProductoId, f.Codigo, f.Producto, f.Tipo,
-                f.Cantidad, f.StockResultante, f.Usuario, f.Observacion)).ToList(),
+                f.Cantidad, f.Diferencia, f.StockResultante, f.Usuario, f.Observacion)).ToList(),
             total, pagina, tamano, (int)Math.Ceiling(total / (double)tamano)));
     }
 }

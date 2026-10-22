@@ -86,6 +86,27 @@ public class ProcedimientosPostgresTests : IAsyncLifetime
     }
 
     [SkippableFact]
+    public async Task El_ajuste_deja_el_stock_en_lo_contado_y_guarda_la_diferencia_con_signo()
+    {
+        // Hay 10; se contaron 7.
+        var resultado = await _repositorio.RegistrarAjusteAsync(_productoId, 7, "tests", "Conteo fisico de prueba", CancellationToken.None);
+
+        Assert.Equal(-3, resultado.Diferencia);
+        Assert.Equal(7, resultado.StockResultante);
+        var producto = await _repositorio.ObtenerProductoAsync(_productoId, CancellationToken.None);
+        Assert.Equal(7, producto!.Cantidad);
+        var historial = await _repositorio.ObtenerHistorialAsync(_productoId, "AJUSTE", 10, 0, CancellationToken.None);
+        var ajuste = Assert.Single(historial);
+        Assert.Equal(-3, ajuste.Diferencia);
+        Assert.Equal("Conteo fisico de prueba", ajuste.Observacion);
+
+        // Un segundo conteo igual al stock no se registra.
+        var ex = await Assert.ThrowsAsync<PostgresException>(() =>
+            _repositorio.RegistrarAjusteAsync(_productoId, 7, "tests", "Repetido", CancellationToken.None));
+        Assert.Equal("IN003", ex.SqlState);
+    }
+
+    [SkippableFact]
     public async Task Los_movimientos_por_dia_traen_una_fila_por_dia_y_cuentan_el_de_hoy()
     {
         await _repositorio.RegistrarEntradaAsync(_productoId, 3, "tests", null, CancellationToken.None);

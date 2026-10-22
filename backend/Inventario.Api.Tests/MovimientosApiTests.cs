@@ -106,11 +106,11 @@ public class MovimientosApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Historial_rechaza_un_tipo_que_no_sea_entrada_o_salida()
+    public async Task Historial_rechaza_un_tipo_que_no_exista()
     {
         var cliente = await _api.ClienteAutenticadoAsync();
 
-        var respuesta = await cliente.GetAsync("/api/movimientos?tipo=AJUSTE");
+        var respuesta = await cliente.GetAsync("/api/movimientos?tipo=DEVOLUCION");
 
         Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
     }

@@ -86,6 +86,17 @@ public class InventarioRepositorio(NpgsqlDataSource datos) : IInventarioReposito
         return filas.AsList();
     }
 
+    public async Task<ResultadoAjuste> RegistrarAjusteAsync(int productoId, int cantidadContada, string usuario, string motivo, CancellationToken ct)
+    {
+        await using var conexion = await datos.OpenConnectionAsync(ct);
+        // Tres INOUT: id del movimiento, diferencia calculada y stock resultante.
+        var (movimientoId, diferencia, stockResultante) = await conexion.QuerySingleAsync<(long, int, int)>(new CommandDefinition(
+            "CALL sp_registrar_ajuste(@productoId, @cantidadContada, @usuario, @motivo, NULL, NULL, NULL)",
+            new { productoId, cantidadContada, usuario, motivo },
+            cancellationToken: ct));
+        return new ResultadoAjuste(movimientoId, diferencia, stockResultante);
+    }
+
     public async Task<IReadOnlyList<MovimientoEnHistorial>> ObtenerHistorialAsync(int? productoId, string? tipo, int limite, int desplazamiento, CancellationToken ct)
     {
         await using var conexion = await datos.OpenConnectionAsync(ct);

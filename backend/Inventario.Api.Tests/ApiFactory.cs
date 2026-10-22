@@ -164,6 +164,16 @@ public class RepositorioFalso : IInventarioRepositorio
         return Task.FromResult(new ResultadoMovimiento(101, producto.Cantidad - cantidad));
     }
 
+    public Task<ResultadoAjuste> RegistrarAjusteAsync(int productoId, int cantidadContada, string usuario, string motivo, CancellationToken ct)
+    {
+        var producto = Buscar(productoId);
+        var diferencia = cantidadContada - producto.Cantidad;
+        if (diferencia == 0)
+            throw new PostgresException($"El conteo ({cantidadContada}) coincide con el stock registrado; no hay nada que ajustar", "ERROR", "ERROR", "IN003");
+        Registrados.Add(("AJUSTE", productoId, diferencia, usuario));
+        return Task.FromResult(new ResultadoAjuste(102, diferencia, cantidadContada));
+    }
+
     public Task<IReadOnlyList<MovimientoEnHistorial>> ObtenerHistorialAsync(int? productoId, string? tipo, int limite, int desplazamiento, CancellationToken ct)
         => Task.FromResult<IReadOnlyList<MovimientoEnHistorial>>([]);
 

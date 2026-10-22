@@ -17,6 +17,8 @@ public interface IInventarioRepositorio
 
     Task<ResultadoMovimiento> RegistrarSalidaAsync(int productoId, int cantidad, string usuario, string? observacion, CancellationToken ct);
 
+    Task<ResultadoAjuste> RegistrarAjusteAsync(int productoId, int cantidadContada, string usuario, string motivo, CancellationToken ct);
+
     Task<IReadOnlyList<MovimientoEnHistorial>> ObtenerHistorialAsync(int? productoId, string? tipo, int limite, int desplazamiento, CancellationToken ct);
 
     // Tablero

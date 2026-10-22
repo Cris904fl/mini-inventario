@@ -31,12 +31,17 @@ public record MovimientoEnHistorial
     public string Producto { get; init; } = string.Empty;
     public string Tipo { get; init; } = string.Empty;
     public int Cantidad { get; init; }
+    /// <summary>Efecto con signo sobre el stock: +entrada, -salida, ajuste tal cual.</summary>
+    public int Diferencia { get; init; }
     public int StockResultante { get; init; }
     public string Usuario { get; init; } = string.Empty;
     public string? Observacion { get; init; }
     /// <summary>Total de filas que cumplen el filtro (para paginar).</summary>
     public long Total { get; init; }
 }
+
+/// <summary>Lo que devuelve <c>sp_registrar_ajuste</c>.</summary>
+public record ResultadoAjuste(long MovimientoId, int Diferencia, int StockResultante);
 
 /// <summary>Fila unica de <c>fn_resumen_inventario</c>.</summary>
 public record ResumenInventario

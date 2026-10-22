@@ -36,6 +36,13 @@ public record SolicitudMovimiento(
 
 public record RespuestaMovimiento(long MovimientoId, int ProductoId, string Tipo, int Cantidad, int StockResultante, string Usuario);
 
+public record SolicitudAjuste(
+    [Range(1, int.MaxValue, ErrorMessage = "Selecciona un producto.")] int ProductoId,
+    [Range(0, 1_000_000, ErrorMessage = "La cantidad contada debe estar entre 0 y 1.000.000.")] int CantidadContada,
+    [Required, StringLength(300, MinimumLength = 5, ErrorMessage = "El motivo debe tener entre 5 y 300 caracteres.")] string Motivo);
+
+public record RespuestaAjuste(long MovimientoId, int ProductoId, int CantidadContada, int Diferencia, int StockResultante, string Usuario);
+
 public record SolicitudProducto(
     [Required, StringLength(20, MinimumLength = 2)] string Codigo,
     [Required, StringLength(120, MinimumLength = 2)] string Nombre,
@@ -71,6 +78,7 @@ public record MovimientoResumen(
     string Producto,
     string Tipo,
     int Cantidad,
+    int Diferencia,
     int StockResultante,
     string Usuario,
     string? Observacion);

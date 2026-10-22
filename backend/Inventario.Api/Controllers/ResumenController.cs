@@ -40,6 +40,6 @@ public class ResumenController(IInventarioRepositorio inventario) : ControllerBa
             masMovidos.Result,
             bajoMinimo.Result,
             ultimos.Result.Select(f => new MovimientoResumen(f.Id, f.Fecha, f.ProductoId, f.Codigo, f.Producto, f.Tipo,
-                f.Cantidad, f.StockResultante, f.Usuario, f.Observacion)).ToList()));
+                f.Cantidad, f.Diferencia, f.StockResultante, f.Usuario, f.Observacion)).ToList()));
     }
 }
