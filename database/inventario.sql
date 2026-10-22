@@ -33,6 +33,7 @@ DROP PROCEDURE IF EXISTS sp_cambiar_estado_usuario(INT, BOOLEAN, INT);
 DROP PROCEDURE IF EXISTS sp_crear_usuario(VARCHAR, VARCHAR, TEXT, VARCHAR, BOOLEAN, INT);
 DROP FUNCTION  IF EXISTS fn_historial_movimientos(INT, VARCHAR, INT, INT);
 DROP FUNCTION  IF EXISTS fn_inventario_actual(TEXT, BOOLEAN);
+DROP PROCEDURE IF EXISTS sp_registrar_ajuste(INT, INT, VARCHAR, TEXT, BIGINT, INT, INT);
 DROP PROCEDURE IF EXISTS sp_crear_producto(VARCHAR, VARCHAR, TEXT, VARCHAR, INT, INT, VARCHAR, INT);
 DROP PROCEDURE IF EXISTS sp_registrar_salida(INT, INT, VARCHAR, TEXT, BIGINT, INT);
 DROP PROCEDURE IF EXISTS sp_registrar_entrada(INT, INT, VARCHAR, TEXT, BIGINT, INT);
@@ -75,8 +76,10 @@ CREATE TABLE productos (
 CREATE TABLE movimientos (
     id               BIGSERIAL PRIMARY KEY,
     producto_id      INT         NOT NULL REFERENCES productos (id),
-    tipo             VARCHAR(10) NOT NULL CHECK (tipo IN ('ENTRADA', 'SALIDA')),
-    cantidad         INT         NOT NULL CHECK (cantidad > 0),
+    tipo             VARCHAR(10) NOT NULL CHECK (tipo IN ('ENTRADA', 'SALIDA', 'AJUSTE')),
+    -- ENTRADA y SALIDA guardan unidades (> 0); AJUSTE guarda la diferencia con signo
+    -- entre lo contado y lo que habia (nunca 0: un conteo que coincide no se registra).
+    cantidad         INT         NOT NULL CHECK (cantidad <> 0 AND (tipo = 'AJUSTE' OR cantidad > 0)),
     stock_resultante INT         NOT NULL CHECK (stock_resultante >= 0),  -- foto del stock tras el movimiento (kardex)
     usuario          VARCHAR(50) NOT NULL,
     observacion      TEXT,
@@ -90,6 +93,8 @@ COMMENT ON COLUMN productos.cantidad IS
     'Stock actual. Solo lo modifican sp_registrar_entrada y sp_registrar_salida.';
 COMMENT ON COLUMN movimientos.stock_resultante IS
     'Cantidad que quedo en el producto justo despues de este movimiento.';
+COMMENT ON COLUMN movimientos.cantidad IS
+    'Unidades movidas; en un AJUSTE es la diferencia con signo (contado menos stock anterior).';
 
 -- -----------------------------------------------------------------------------
 -- Procedimientos de escritura
@@ -185,6 +190,64 @@ BEGIN
 
     INSERT INTO movimientos (producto_id, tipo, cantidad, stock_resultante, usuario, observacion)
     VALUES (p_producto_id, 'SALIDA', p_cantidad, p_stock_resultante, p_usuario, NULLIF(TRIM(p_observacion), ''))
+    RETURNING id INTO p_movimiento_id;
+END;
+$$;
+
+-- Ajuste por conteo fisico: se informa cuanto HAY en la estanteria y el
+-- procedimiento calcula la diferencia contra el stock registrado. Es la forma de
+-- corregir mermas, roturas o errores sin disfrazarlos de entrada o salida.
+CREATE OR REPLACE PROCEDURE sp_registrar_ajuste(
+    IN    p_producto_id      INT,
+    IN    p_cantidad_contada INT,
+    IN    p_usuario          VARCHAR(50),
+    IN    p_motivo           TEXT,            -- obligatorio: un ajuste siempre se justifica
+    INOUT p_movimiento_id    BIGINT DEFAULT NULL,
+    INOUT p_diferencia       INT    DEFAULT NULL,
+    INOUT p_stock_resultante INT    DEFAULT NULL
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_stock_actual INT;
+BEGIN
+    IF p_cantidad_contada IS NULL OR p_cantidad_contada < 0 THEN
+        RAISE EXCEPTION 'La cantidad contada no puede ser negativa'
+            USING ERRCODE = 'IN003';
+    END IF;
+
+    IF p_motivo IS NULL OR TRIM(p_motivo) = '' THEN
+        RAISE EXCEPTION 'Un ajuste de inventario debe llevar motivo'
+            USING ERRCODE = 'IN003';
+    END IF;
+
+    -- Mismo bloqueo que entradas y salidas: nadie mueve el producto mientras se ajusta.
+    SELECT cantidad INTO v_stock_actual
+    FROM productos
+    WHERE id = p_producto_id AND activo
+    FOR UPDATE;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El producto % no existe o esta inactivo', p_producto_id
+            USING ERRCODE = 'IN002';
+    END IF;
+
+    p_diferencia := p_cantidad_contada - v_stock_actual;
+
+    IF p_diferencia = 0 THEN
+        RAISE EXCEPTION 'El conteo (%) coincide con el stock registrado; no hay nada que ajustar', p_cantidad_contada
+            USING ERRCODE = 'IN003';
+    END IF;
+
+    p_stock_resultante := p_cantidad_contada;
+
+    UPDATE productos
+    SET cantidad = p_stock_resultante,
+        actualizado_en = now()
+    WHERE id = p_producto_id;
+
+    INSERT INTO movimientos (producto_id, tipo, cantidad, stock_resultante, usuario, observacion)
+    VALUES (p_producto_id, 'AJUSTE', p_diferencia, p_stock_resultante, p_usuario, TRIM(p_motivo))
     RETURNING id INTO p_movimiento_id;
 END;
 $$;
@@ -414,7 +477,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION fn_historial_movimientos(
     p_producto_id   INT         DEFAULT NULL,
-    p_tipo          VARCHAR(10) DEFAULT NULL,   -- ENTRADA | SALIDA | NULL (todos)
+    p_tipo          VARCHAR(10) DEFAULT NULL,   -- ENTRADA | SALIDA | AJUSTE | NULL (todos)
     p_limite        INT         DEFAULT 20,
     p_desplazamiento INT        DEFAULT 0
 )
@@ -426,6 +489,7 @@ RETURNS TABLE (
     producto         VARCHAR(120),
     tipo             VARCHAR(10),
     cantidad         INT,
+    diferencia       INT,             -- efecto con signo sobre el stock: +entrada, -salida, ajuste tal cual
     stock_resultante INT,
     usuario          VARCHAR(50),
     observacion      TEXT,
@@ -441,6 +505,7 @@ AS $$
            p.nombre AS producto,
            m.tipo,
            m.cantidad,
+           CASE m.tipo WHEN 'SALIDA' THEN -m.cantidad ELSE m.cantidad END AS diferencia,
            m.stock_resultante,
            m.usuario,
            m.observacion,
@@ -579,13 +644,14 @@ CALL sp_registrar_entrada(3,  12, 'admin', 'Compra orden OC-2026-018');
 CALL sp_registrar_salida (3,   6, 'admin', 'Consumo bodega 2');
 CALL sp_registrar_salida (8,  40, 'admin', 'Sellado de contenedores semana 42');
 CALL sp_registrar_salida (6,   3, 'admin', NULL);
+CALL sp_registrar_ajuste (7,  23, 'admin', 'Conteo fisico: dos cajas rotas');
 
 -- Solo para los datos de ejemplo: se reparten en los ultimos dias para que el
 -- tablero y el historial muestren algo de historia. La API siempre registra con now().
 UPDATE movimientos
 SET fecha = fecha - CASE
     WHEN id <= 8 THEN interval '9 days'          -- inventario inicial
-    ELSE make_interval(days => 15 - id::int)     -- ids 9..14: hace 6..1 dias
+    ELSE make_interval(days => 16 - id::int)     -- ids 9..15: hace 7..1 dias
 END;
 
 COMMIT;
